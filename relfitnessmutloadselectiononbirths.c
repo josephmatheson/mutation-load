@@ -26,6 +26,7 @@ FILE	*veryverbosefilepointer;
 FILE	*miscfilepointer;
 FILE	*datafilepointer;
 
+long double CalculateVariance(int, long double *, long double);
 long double FindFittestWi(long double *, int);
 long double Fen_sum(long double *, int);
 void Fen_add(long double *, int, long double, int);
@@ -41,7 +42,7 @@ void RecombineChromosomesIntoGamete(int, int , int , double *, double *, int);
 int SampleFromPoisson(float );
 void MutateGamete(int , int , double *, float, double);
 double CalculateWi(int , int , double *, double *, double , int);
-void ReplaceVictim(int , int , int, int, int, int, int , int , float, double, long double *, double *, int, long double *, long double *);
+void ReplaceVictim(double *, double *, int, int, int , int , double, long double *, double *, int, long double *, long double *);
 //void RecalculateSumOfDeathRates(long double *, int , int , int , struct individual *);
 
 void main(int argc, char *argv[]) {
@@ -82,6 +83,10 @@ void main(int argc, char *argv[]) {
     int currentparent2;
     int currentvictim;
     long double currentfittestindividualswi;
+    double parent1gamete[numberofchromosomes*chromosomesize], parent2gamete[numberofchromosomes*chromosomesize];
+    long double *lasttwentygenerations;
+    lasttwentygenerations = malloc(sizeof(long double) * 20);
+    long double variancesum;
         
     /*Initializes the population as an array of individuals, 
     the current victim as a pointer to an individual,
@@ -127,7 +132,7 @@ void main(int argc, char *argv[]) {
     strcat(datafilename, argv[6]);
 
     datafilepointer = fopen(datafilename, "w"); //opens the file to which to print data to be plotted.
-    fprintf(datafilepointer, "Generation,Sum.of.wis,\n");
+    fprintf(datafilepointer, "Generation,Sum.of.wis,Variance.in.log.fitness\n");
     
         
     for (i = 0; i < generations; i++) {
@@ -138,47 +143,41 @@ void main(int argc, char *argv[]) {
             while (currentparent1 == currentparent2) { //probably not ideal, since it'll never break with population sizes of zero or one.
                 currentparent2 = ChooseParentWithTree(wholepopulationwistree, popsize, sumofwis);
             }
-            ReplaceVictim(i, j, popsize, currentvictim, currentparent1, currentparent2, chromosomesize, numberofchromosomes, mutationrate, Sd, psumofwis, wholepopulationgenomes, totalindividualgenomelength, wholepopulationwistree, wholepopulationwisarray);
+            
+            RecombineChromosomesIntoGamete(currentparent1, chromosomesize, numberofchromosomes, parent1gamete, wholepopulationgenomes, totalindividualgenomelength);
+            MutateGamete(chromosomesize, numberofchromosomes, parent1gamete, mutationrate, Sd);
+            
+            RecombineChromosomesIntoGamete(currentparent2, chromosomesize, numberofchromosomes, parent2gamete, wholepopulationgenomes, totalindividualgenomelength);
+            MutateGamete(chromosomesize, numberofchromosomes, parent2gamete, mutationrate, Sd);
+
+            ReplaceVictim(parent1gamete, parent2gamete, popsize, currentvictim, chromosomesize, numberofchromosomes, Sd, psumofwis, wholepopulationgenomes, totalindividualgenomelength, wholepopulationwistree, wholepopulationwisarray);
+            
             if (VERBOSE) {
                 fprintf(verbosefilepointer, "\nSum of wis after generation %d, round %d: %.24Lf", i+1, j+1, sumofwis);
             }
         }
 
-        //Following code allows for checking the fitnesses of all individuals in the population, for debugging purposes.
-        /*
-        if (i == 200 || i == 400 || i == 600 || i == 800) {
-            fprintf(veryverbosefilepointer, "\nWi of all individuals in the population after generation %d:", i);
-            for (j=0;j<popsize;j++) {
-                fprintf(veryverbosefilepointer, "\n%Lf", wholepopulationwisarray[j]);
-            }
-            fprintf(veryverbosefilepointer, "\n");
-        }
-        */
     
-        //Following code allows for calculating and printing the variance in fitness of the population.
+        //Following code calculates the variance in log(fitness) of the population.
         //May use an imprecise algorithm -- check before using as data.
-        /*
-        long double variancesum;
-        variancesum = 0.0;
-        for (k = 0; k < popsize; k++) {
-            variancesum += (long double) pow((wholepopulationwisarray[i] - (sumofwis / popsize)), 2);
-        }
-        fprintf(verbosefilepointer, "\nVariance after generation %d: %Lf", i+1, (variancesum / popsize));
-        */
+        variancesum = CalculateVariance(popsize, wholepopulationwisarray, sumofwis);
         
-        fprintf(datafilepointer, "%d,%Lf,\n", i+1, sumofwis);
+        //This is the main data output, currently the summed fitness and variance in log(fitness) in the population.
+        fprintf(datafilepointer, "%d,%Lf,%.18Lf\n", i+1, sumofwis, variancesum);
         
+        //These lines ensure that the magnitude of fitness hasn't declined by too much.
+        //At extremely small fitness values, floating-point math becomes imprecise.
+        //These lines end the simulation if fitness declines below 10^-10, which should represent a completely degraded population.
         currentfittestindividualswi = FindFittestWi(wholepopulationwisarray, popsize);
         if (currentfittestindividualswi < pow(10.0, -10.0)) {
             fprintf(miscfilepointer, "\nFitness declined to less than 10^-10 during generation %d.", i+1);
             fprintf(datafilepointer, "Fitness declined to catastrophic levels in generation %d.\n", i+1);
             i = generations;
         }
-
-        //RecalculateSumOfDeathRates(psumofwis, popsize, i, popsize-1, population);
-    }
         
-    printf("\nOutput is:\n");
+        
+
+    }
         
     //Following code allows for printing full genomes for debugging purposes.
     /*
@@ -214,6 +213,19 @@ void main(int argc, char *argv[]) {
 
 }
 
+long double CalculateVariance(int popsize, long double *wholepopulationwisarray, long double sumofwis)
+{
+    int i;
+    long double variancesum;
+    variancesum = 0.0;
+    long double logaverage;
+    logaverage = log(sumofwis / popsize);
+    for (i = 0; i < popsize; i++) {
+        variancesum += (long double) pow((log(wholepopulationwisarray[i]) - logaverage), 2);
+    }
+    return variancesum;
+}
+
 long double FindFittestWi(long double *wisarray, int popsize)
 {
     long double fittestwi;
@@ -229,7 +241,7 @@ long double FindFittestWi(long double *wisarray, int popsize)
 
 /*All Fenwick tree functions from Wikipedia page "Fenwick tree" URL:https://en.wikipedia.org/wiki/Fenwick_tree
  This project is licensed under the GNU General Public License version 3.0, 
- * which is compatible with the CC-BY-SA license of Wikipedia text.*/
+ which is compatible with the CC-BY-SA license of Wikipedia text.*/
 
 
 //Returns sum of first i elements in the tree, 0 through i-1.
@@ -282,7 +294,7 @@ void Fen_set(long double *tree, int numberofelementsintree, long double newvalue
 void InitializePopulation(long double *wholepopulationwistree, long double *wholepopulationwisarray, int populationsize, double *populationgenomes, int totalpopulationgenomelength) {
 	int i, j;
         for (i = 0; i < populationsize; i++) {
-            wholepopulationwistree[i] = 1.0; //For relative fitness, initializes all wis to 1, so all death probabilities are initially 1/N.
+            wholepopulationwistree[i] = 1.0; //for relative fitness, all individuals start with probability of being chosen as a parent of 1/N
             wholepopulationwisarray[i] = 1.0;
         }
         //this for loop taken from the Fen_init function in sample implementation from 'Fenwick tree' Wikipedia page.
@@ -422,10 +434,10 @@ int SampleFromPoisson(float poissonmean)
 void MutateGamete(int chromosomesize, int numberofchromosomes, double *gamete, float mutationrate, double mutationeffectsize)
 {
 	int i;
-	float meannumberofmutations = 2.0 * mutationrate * (float) chromosomesize;
+	float meannumberofmutations = 2.0 * mutationrate * (float) chromosomesize; //Assumes U = 2, could easily be modified to take input values of U.
 	int numberofmutations = SampleFromPoisson(meannumberofmutations);
 	for(i = 0; i < numberofmutations; i++) {	
-		int randomchromosometomutate = pcg32_boundedrand(numberofchromosomes);
+		int randomchromosometomutate = pcg32_boundedrand(numberofchromosomes); //if we decide to include heterogenous rates of recombination/mutation, both of these will need to be replaced by a function that weights each linkage block's probability of mutating.
         	int randomblocktomutate = pcg32_boundedrand(chromosomesize);
         	gamete[randomchromosometomutate*chromosomesize + randomblocktomutate] += log(1 + mutationeffectsize); //this is going to be a distribution of effects at some point.
 	}
@@ -446,16 +458,10 @@ double CalculateWi(int numberofchromosomes, int chromosomesize, double *parent1g
 	return newwi;
 }
 
-void ReplaceVictim(int currentgeneration, int currentround, int currentpopsize, int currentvictim, int currentparent1, int currentparent2, int chromosomesize, int numberofchromosomes, float mutationrate, double mutationeffectsize, long double *sumofwis, double *wholepopulationgenomes, int totalindividualgenomelength, long double *wholepopulationwistree, long double *wholepopulationwisarray)
+void ReplaceVictim(double *parent1gamete, double *parent2gamete, int currentpopsize, int currentvictim, int chromosomesize, int numberofchromosomes, double mutationeffectsize, long double *sumofwis, double *wholepopulationgenomes, int totalindividualgenomelength, long double *wholepopulationwistree, long double *wholepopulationwisarray)
 {
 	int i;
 	double newwi;
-	double parent1gamete[numberofchromosomes*chromosomesize], parent2gamete[numberofchromosomes*chromosomesize];
-	RecombineChromosomesIntoGamete(currentparent1, chromosomesize, numberofchromosomes, parent1gamete, wholepopulationgenomes, totalindividualgenomelength);
-	RecombineChromosomesIntoGamete(currentparent2, chromosomesize, numberofchromosomes, parent2gamete, wholepopulationgenomes, totalindividualgenomelength);
-	
-        MutateGamete(chromosomesize, numberofchromosomes, parent1gamete, mutationrate, mutationeffectsize);
-	MutateGamete(chromosomesize, numberofchromosomes, parent2gamete, mutationrate, mutationeffectsize);
 	
         newwi = CalculateWi(numberofchromosomes, chromosomesize, parent1gamete, parent2gamete, mutationeffectsize, totalindividualgenomelength);
 	
