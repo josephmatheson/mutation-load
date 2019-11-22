@@ -4,6 +4,9 @@
  * and open the template in the editor.
  */
 
+//wi fitness of indiviual
+//for test case set delerious mutations and beneficial mutation both to zero
+
 #include<stdio.h>
 #include<float.h>
 #include<string.h>
@@ -46,20 +49,21 @@ void Fen_add(long double *, int, long double, int);
 long double Fen_range(long double *, int, int);
 long double Fen_get(long double *, int);
 void Fen_set(long double *, int, long double, int);
-void InitializePopulation(long double *, long double *, int , double *, int, int, long double *);
+void InitializePopulation(long double *, long double *, int , double *, int, int, long double *, long double *);
 //int ChooseVictimWithoutTree(long double *, int , long double);
 int SearchTree(int, int, long double, long double *);
-int ChooseParentWithTree(long double *, int, long double);
-int ChooseVictim(int);
+int ChooseParent(int);
+int ChooseVictimWithTree(long double *, int, long double);
 void RecombineChromosomesIntoGamete(int, int, int, int , int , double *, double *, int, int *);
 int SampleFromPoisson(float );
 int DetermineNumberOfMutations(int, int, float);
 void MutateGamete(int , int , double *, double);
 double CalculateWi(double *, double *, int);
-void ReplaceVictim(double *, double *, int, int, long double *, double *, int, long double *, long double *);
+//double CaclulateWiInverse(double *parent1gamete, double *parent2gamete, int totalindividualgenomelength);
+void ReplaceVictim(double *, double *, int, int, long double *, double *, int, long double *, long double *, long double *);
 //void RecalculateSumOfDeathRates(long double *, int , int , int , struct individual *);
 void ProduceMutatedRecombinedGamete(int, int, double *, int , int , int , int , double , double , double , char * , double *, gsl_rng *);
-void PerformOneTimeStep(int, int, int, long double *, long double *, double *, long double *, int, int, int, double, double, double, char *, double *, double *, gsl_rng *);
+void PerformOneTimeStep(int, int, int, long double *, long double *, double *, long double *, long double *, int, int, int, double, double, double, char *, double *, double *, gsl_rng *);
 double RunSimulation(char *, char *, char *, char *, char *, char *, char *, char *, int, int, int, int, double, double, double, char *, gsl_rng *, FILE *, FILE *, FILE *);
 int BracketZeroForSb(double *, double *, char *, char *, char *, char *, char *, char *, char *, int , int, int, int, double, double, double, char *, gsl_rng *, FILE *, FILE *, FILE *);
 double BisectionMethodToFindSbWithZeroSlope(double *, double *, char *, char *, char *, char *, char *, char *, char *, int , int, int, int, double, double, double, char *, gsl_rng *, FILE *, FILE *, FILE *);
@@ -76,7 +80,6 @@ void main(int argc, char *argv[]) {
     strcat(directoryname, argv[5]);
     strcat(directoryname, "popsize");
     strcat(directoryname, argv[2]);
-    strcat(directoryname, "mud");
     strcat(directoryname, argv[3]);
     strcat(directoryname, "seed");
     strcat(directoryname, argv[11]);
@@ -247,6 +250,9 @@ long double FindFittestWi(long double *wisarray, int popsize)
             fittestwi = wisarray[i];
         }
     }
+
+    //fprintf(veryverbosefilepointer, "\nnew fitness %lf", fittestwi);
+
     return fittestwi;
 }
 
@@ -278,7 +284,6 @@ double CalculateSlopeOfLogFitness(int endofsimulation, int endofburninphase, dou
  This project is licensed under the GNU General Public License version 3.0, 
  which is compatible with the CC-BY-SA license of Wikipedia text.*/
 
-
 //Returns sum of first i elements in the tree, 0 through i-1.
 long double Fen_sum(long double *tree, int i)
 {
@@ -290,12 +295,19 @@ long double Fen_sum(long double *tree, int i)
     return sum;
 }
 
+//modified to add inverse of fitness
+//used only for future code
+//will make code make no sense
 //Adds an amount to the ith element in the tree (and therefore to the Fen_sum for all elements in the tree greater than i).
+
 void Fen_add(long double *tree, int numberofelementsintree, long double amounttoadd, int i)
 {
+
     while (i < numberofelementsintree) {
         tree[i] += amounttoadd;
         i += LSB(i+1);
+
+        fprintf(verbosefilepointer, "");
     }
 }
 
@@ -326,13 +338,16 @@ void Fen_set(long double *tree, int numberofelementsintree, long double newvalue
     Fen_add(tree, numberofelementsintree, newvalue - Fen_get(tree, i), i);
 }
 
-void InitializePopulation(long double *wholepopulationwistree, long double *wholepopulationwisarray, int populationsize, double *populationgenomes, int totalpopulationgenomelength, int totaltimesteps, long double * psumofwis) {
+void InitializePopulation(long double *wholepopulationwistree, long double *wholepopulationwisarray, int populationsize, double *populationgenomes, int totalpopulationgenomelength, int totaltimesteps, long double * psumofwis, long double *pInverseSumOfWis) {
     int i, j;
     
     double haploidgenomelength = (double) ((totalpopulationgenomelength / populationsize) / 2);
     
     for (i = 0; i < populationsize; i++) {
         wholepopulationwistree[i] = 1.0; //for relative fitness, all individuals start with probability of being chosen as a parent of 1/N
+        /*
+         * nothing changed for initial call for absolute fitness
+         */
         wholepopulationwisarray[i] = 1.0;
     }
     //this for loop taken from the Fen_init function in sample implementation from 'Fenwick tree' Wikipedia page.
@@ -346,17 +361,20 @@ void InitializePopulation(long double *wholepopulationwistree, long double *whol
         populationgenomes[i] = 0.0;
     }
     *psumofwis = (long double) populationsize;
+    *pInverseSumOfWis = (long double) populationsize;
     
 }
 
 int SearchTree(int leftbound, int rightbound, long double targetvalue, long double *Fenwicktree)
 {
+	//double sumOfInverseFitnesses;
     int middle;
     middle = floor((leftbound+rightbound)/2);
     long double partialsumatmiddle;
     long double partialsumatmiddleminusone;
     partialsumatmiddle = Fen_sum(Fenwicktree, middle);
     partialsumatmiddleminusone = Fen_sum(Fenwicktree, middle-1);
+
     if(partialsumatmiddle < targetvalue) {
         if((middle+1) == rightbound) {
             return middle;
@@ -377,34 +395,45 @@ int SearchTree(int leftbound, int rightbound, long double targetvalue, long doub
 
 //The tree in the name is the Fenwick tree, which stores the fitnesses of individuals in the population.
 //This function is where selection occurs -- individuals with higher-than-average fitness will be chosen more often as parents.
-int ChooseParentWithTree(long double *wholepopulationwistree, int popsize, long double sumofwis)
-{
-    long double randomnumberofbirth;
-    int newparent = 0;
-    
-    randomnumberofbirth = (ldexp(pcg32_random(), -32)) * sumofwis;
-    //Above line generates a random integer between 0 and 2^32, then multiplies by 2^-32
-    //to generate a float between 0 and 1 and then multiplies by the sum of wis
-    //to get a number between 0 and the sum of wis.
-    
-    int leftbound, rightbound;
-    leftbound = 0;
-    rightbound = popsize;
-    if (leftbound > rightbound) {
-        return -1;
-        fprintf(miscfilepointer, "\nError: population size is %d.", popsize);
-    }
-    //Above lines initialize the variables necessary for the SearchTree function and check for an extinct population.
-    
-    newparent = (SearchTree(leftbound, rightbound, randomnumberofbirth, wholepopulationwistree));
-    return newparent;
-}
-
-//In this model, individuals die at random. There's no selection happening here.
-int ChooseVictim(int populationsize)
+//edit to make choose parent with tree a random selection
+//changed name
+int ChooseParent(int populationsize)
 {
     int randomindividual = pcg32_boundedrand(populationsize);
+
     return randomindividual;
+}
+//edit
+
+//In this model, individuals die at random. There's no selection happening here.
+//swapped choose parent with tree and choose victim
+int ChooseVictimWithTree(long double *wholepopulationwistree, int popsize, long double sumofwis)//using pinversesum intesting and is currently unchanged 11/18/2019
+{
+	long double randomnumberofdeath;
+			int newVictim = 0;
+
+			randomnumberofdeath = (ldexp(pcg32_random(), -32)) * sumofwis;
+			//Above line generates a random integer between 0 and 2^32, then multiplies by 2^-32
+			//to generate a float between 0 and 1 and then multiplies by the sum of wis
+			//to get a number between 0 and the sum of wis.
+
+			int leftbound, rightbound;
+			leftbound = 0;
+			rightbound = popsize;//change variable name
+			if (leftbound > rightbound) {
+				return -1;
+				fprintf(miscfilepointer, "\nError: population size is %d.", popsize);
+			}
+			//Above lines initialize the variables necessary for the SearchTree function and check for an extinct population.
+
+			//the random death is causing a strange number
+			newVictim = (SearchTree(leftbound, rightbound, randomnumberofdeath, wholepopulationwistree));//fixed possible error
+
+			if(VERYVERBOSE == 1){
+				fprintf(veryverbosefilepointer, "Choosen Victim %d\n", newVictim);
+			}
+
+			return newVictim;
 }
 
 //1 recombination site per chromosome
@@ -422,14 +451,15 @@ void RecombineChromosomesIntoGamete(int totaltimesteps, int currenttimestep, int
         } while (recombinationsite == 0); //it doesn't make sense to do a recombination event before the first linkage block. Note that this will never break if the chromosome size is only one linkage block.
         
         
-	for (i = 0; i < recombinationsite; i++) {
-            if (startchromosome == 0) {
-		gamete[h*chromosomesize + i] = populationgenomes[startofindividual + (h*chromosomesize) + i];
-            }
-            else {
-		gamete[h*chromosomesize + i] = populationgenomes[startofindividual + totalindividualgenomelength / 2 + (h*chromosomesize) + i];
-            }
-	}
+		for (i = 0; i < recombinationsite; i++) {
+				if (startchromosome == 0) {
+			gamete[h*chromosomesize + i] = populationgenomes[startofindividual + (h*chromosomesize) + i];
+				}
+				else {
+			gamete[h*chromosomesize + i] = populationgenomes[startofindividual + totalindividualgenomelength / 2 + (h*chromosomesize) + i];
+				}
+		}
+
         for (i = recombinationsite; i < chromosomesize; i++) {
             if (startchromosome == 0) {
                 gamete[h*chromosomesize + i] = populationgenomes[startofindividual + totalindividualgenomelength / 2 + (h*chromosomesize) + i];
@@ -475,6 +505,7 @@ int SampleFromPoisson(float poissonmean)
             t = 0.9 * (1.0 + y*y) * exp(numberofmutations*logmean - gsl_sf_lngamma(numberofmutations + 1.0) - g);
 	} while (ldexp(pcg32_random(), -32) > t);
     }
+
 return numberofmutations;
 }
 
@@ -487,6 +518,9 @@ int DetermineNumberOfMutations(int chromosomesize, int numberofchromosomes, floa
     //Above calculation should be moved outside this function for increased efficiency.
     
     int numberofmutations = SampleFromPoisson(meannumberofmutations);
+
+    //fprintf(veryverbosefilepointer, " Number of mutations %d ", numberofmutations);
+
     return numberofmutations;
 }
 
@@ -514,27 +548,56 @@ double CalculateWi(double *parent1gamete, double *parent2gamete, int totalindivi
         currentlinkageblockssum += parent2gamete[i];
     }
     newwi = exp(currentlinkageblockssum);
+
+    if(VERYVERBOSE == 1){
+    	//fprintf(veryverbosefilepointer, "Calculated fitness at a point %0.6lf ", newwi);
+    }
     return newwi;
 }
 
-void ReplaceVictim(double *parent1gamete, double *parent2gamete, int currentpopsize, int currentvictim, long double *sumofwis, double *wholepopulationgenomes, int totalindividualgenomelength, long double *wholepopulationwistree, long double *wholepopulationwisarray)
+//function that creates an estimate through appromiximation
+
+
+//new function to calculate the inverse of the wi of all creatures at a given moment 11/1/2019
+//can be replaced with seperate function that creates an estimate 11/1/2019
+/*
+double CaclulateWiInverse(double *parent1gamete, double *parent2gamete, int totalindividualgenomelength)
+{
+	double newWi = 0.0;
+	double inverseNewWi = 0.0;
+	long double currentlinkageblockssum = 0.0;
+	int i;
+
+	for (i = 0; i < (totalindividualgenomelength/2); i++) {
+		currentlinkageblockssum += parent1gamete[i];
+	    currentlinkageblockssum += parent2gamete[i];
+	}
+	newWi = exp(currentlinkageblockssum);//possible glitch with exponential value here due to one over 11/1/2019
+	inverseNewWi = 1.0 / newWi;
+	return inverseNewWi;
+}
+*/
+//make inverse if calculate wi here to be most useful.
+
+void ReplaceVictim(double *parent1gamete, double *parent2gamete, int currentpopsize, int currentvictim, long double *sumofwis, double *wholepopulationgenomes, int totalindividualgenomelength, long double *wholepopulationwistree, long double *wholepopulationwisarray, long double *pInverseSumOfWis)
 {
     int i;
     double newwi;
 	
-    newwi = CalculateWi(parent1gamete, parent2gamete, totalindividualgenomelength);
-	
+    newwi = CalculateWi(parent1gamete, parent2gamete, totalindividualgenomelength);//last comment was silly ignore it 11/1/2019
+
     for (i = 0; i < (totalindividualgenomelength/2); i++) {
         wholepopulationgenomes[currentvictim*totalindividualgenomelength + i] = parent1gamete[i];
         wholepopulationgenomes[currentvictim*totalindividualgenomelength + totalindividualgenomelength/2 + i] = parent2gamete[i];
 //It would be more efficient to build directly into victim slot, but right now it is possible for the victim to also be a parent, later add an if statement to more efficiently deal with more common case.
     }
 
-    *sumofwis -= wholepopulationwisarray[currentvictim];
+    *pInverseSumOfWis -= 1/wholepopulationwisarray[currentvictim];//changed from psumofwis to pinversesum of wis 11/18/2019
+    //replace at one point with inverse of wi if nessesary (highly likely)
     Fen_set(wholepopulationwistree, currentpopsize, newwi, currentvictim);
     
     wholepopulationwisarray[currentvictim] = (long double) newwi;
-    *sumofwis += (long double) newwi;
+    *pInverseSumOfWis += (long double) 1/newwi;//changed from psumofwis to pinversesum of wis 11/18/2019
 
 }
 
@@ -604,23 +667,24 @@ void ProduceMutatedRecombinedGamete(int totaltimesteps, int currenttimestep, dou
     
 }
 
-void PerformOneTimeStep(int popsize, int totaltimesteps, int currenttimestep, long double *wholepopulationwistree, long double *wholepopulationwisarray, double *wholepopulationgenomes, long double * psumofwis, int chromosomesize, int numberofchromosomes, int totalindividualgenomelength, double deleteriousmutationrate, double beneficialmutationrate, double Sb, char * beneficialdistribution, double *parent1gamete, double *parent2gamete, gsl_rng * randomnumbergeneratorforgamma)
+void PerformOneTimeStep(int popsize, int totaltimesteps, int currenttimestep, long double *wholepopulationwistree, long double *wholepopulationwisarray, double *wholepopulationgenomes, long double * psumofwis, long double *pInverseSumOfWis, int chromosomesize, int numberofchromosomes, int totalindividualgenomelength, double deleteriousmutationrate, double beneficialmutationrate, double Sb, char * beneficialdistribution, double *parent1gamete, double *parent2gamete, gsl_rng * randomnumbergeneratorforgamma)
 {
 
     int currentparent1, currentparent2, currentvictim;
 
-    currentvictim = ChooseVictim(popsize);
-    currentparent1 = ChooseParentWithTree(wholepopulationwistree, popsize, *psumofwis);
-    currentparent2 = ChooseParentWithTree(wholepopulationwistree, popsize, *psumofwis);
+    currentvictim = ChooseVictimWithTree(wholepopulationwistree, popsize, *pInverseSumOfWis);
+    currentparent1 = ChooseParent(popsize);
+    currentparent2 = ChooseParent(popsize);
     while (currentparent1 == currentparent2) { //probably not ideal, since it'll never break with population sizes of zero or one.
-        currentparent2 = ChooseParentWithTree(wholepopulationwistree, popsize, *psumofwis);
+        currentparent2 = ChooseParent(popsize);
     }
     
    
     ProduceMutatedRecombinedGamete(totaltimesteps, currenttimestep, wholepopulationgenomes, chromosomesize, numberofchromosomes, totalindividualgenomelength, currentparent1, deleteriousmutationrate, beneficialmutationrate, Sb, beneficialdistribution, parent1gamete, randomnumbergeneratorforgamma);
-    ProduceMutatedRecombinedGamete(totaltimesteps, currenttimestep, wholepopulationgenomes, chromosomesize, numberofchromosomes, totalindividualgenomelength, currentparent2, deleteriousmutationrate, beneficialmutationrate, Sb, beneficialdistribution, parent2gamete, randomnumbergeneratorforgamma);
+    ProduceMutatedRecombinedGamete(totaltimesteps, currenttimestep, wholepopulationgenomes, chromosomesize,
+    numberofchromosomes, totalindividualgenomelength, currentparent2, deleteriousmutationrate, beneficialmutationrate, Sb, beneficialdistribution, parent2gamete, randomnumbergeneratorforgamma);
                 
-    ReplaceVictim(parent1gamete, parent2gamete, popsize, currentvictim, psumofwis, wholepopulationgenomes, totalindividualgenomelength, wholepopulationwistree, wholepopulationwisarray);
+    ReplaceVictim(parent1gamete, parent2gamete, popsize, currentvictim, psumofwis, wholepopulationgenomes, totalindividualgenomelength, wholepopulationwistree, wholepopulationwisarray, pInverseSumOfWis);
     
 }
 
@@ -676,7 +740,9 @@ double RunSimulation(char * Nxtimestepsname, char * popsizename, char * delmutra
     totalindividualgenomelength = numberofchromosomes * 2 * chromosomesize;
     wholepopulationgenomes = malloc(sizeof(double) * totalpopulationgenomelength);
     long double sumofwis;
+    long double inverseSumOfWis;
     long double *psumofwis = &sumofwis;
+    long double *pInverseSumOfWis = &inverseSumOfWis;
     long double *wholepopulationwistree;
     wholepopulationwistree = malloc(sizeof(long double) * popsize);
        
@@ -695,7 +761,7 @@ double RunSimulation(char * Nxtimestepsname, char * popsizename, char * delmutra
         fflush(veryverbosefilepointer);
     }
     
-    InitializePopulation(wholepopulationwistree, wholepopulationwisarray, popsize, wholepopulationgenomes, totalpopulationgenomelength, totaltimesteps, psumofwis);
+    InitializePopulation(wholepopulationwistree, wholepopulationwisarray, popsize, wholepopulationgenomes, totalpopulationgenomelength, totaltimesteps, psumofwis, pInverseSumOfWis);
     /*Sets the initial population to have zeroes in all their linkage blocks,
     death rates equal to the baseline wi, and an identifier number.
     It also sums the wis and returns the sum.*/
@@ -748,7 +814,7 @@ double RunSimulation(char * Nxtimestepsname, char * popsizename, char * delmutra
         //Following code performs N rounds of paired births and deaths.
         for (j = 0; j < popsize; j++) {
             currenttimestep += 1;            
-            PerformOneTimeStep(popsize, totaltimesteps, currenttimestep, wholepopulationwistree, wholepopulationwisarray, wholepopulationgenomes, psumofwis, chromosomesize, numberofchromosomes, totalindividualgenomelength, deleteriousmutationrate, beneficialmutationrate, Sb, beneficialdistribution, parent1gamete, parent2gamete, randomnumbergeneratorforgamma);
+            PerformOneTimeStep(2, totaltimesteps, currenttimestep, wholepopulationwistree, wholepopulationwisarray, wholepopulationgenomes, psumofwis, pInverseSumOfWis, chromosomesize, numberofchromosomes, totalindividualgenomelength, deleteriousmutationrate, beneficialmutationrate, Sb, beneficialdistribution, parent1gamete, parent2gamete, randomnumbergeneratorforgamma);
             
         }
         
