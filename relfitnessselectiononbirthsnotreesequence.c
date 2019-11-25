@@ -4,8 +4,7 @@
  * and open the template in the editor.
  */
 
-//wi fitness of indiviual
-//for test case set delerious mutations and beneficial mutation both to zero
+//current bug is that the code is reading the data backwards.
 
 #include<stdio.h>
 #include<float.h>
@@ -430,7 +429,7 @@ int ChooseVictimWithTree(long double *wholepopulationwistree, int popsize, long 
 			newVictim = (SearchTree(leftbound, rightbound, randomnumberofdeath, wholepopulationwistree));//fixed possible error
 
 			if(VERYVERBOSE == 1){
-				fprintf(veryverbosefilepointer, "Choosen Victim %d\n", newVictim);
+				//fprintf(veryverbosefilepointer, "Choosen Victim %d\n", newVictim);
 			}
 
 			return newVictim;
@@ -592,12 +591,12 @@ void ReplaceVictim(double *parent1gamete, double *parent2gamete, int currentpops
 //It would be more efficient to build directly into victim slot, but right now it is possible for the victim to also be a parent, later add an if statement to more efficiently deal with more common case.
     }
 
-    *pInverseSumOfWis -= 1/wholepopulationwisarray[currentvictim];//changed from psumofwis to pinversesum of wis 11/18/2019
+    *sumofwis += 1/wholepopulationwisarray[currentvictim];//changed from psumofwis to pinversesum of wis 11/18/2019 changed back and reversed sign (caused a reverse in the mutation rate where the positive mutation rate became negative and the negative became positive) 11/22/2019
     //replace at one point with inverse of wi if nessesary (highly likely)
     Fen_set(wholepopulationwistree, currentpopsize, newwi, currentvictim);
     
-    wholepopulationwisarray[currentvictim] = (long double) newwi;
-    *pInverseSumOfWis += (long double) 1/newwi;//changed from psumofwis to pinversesum of wis 11/18/2019
+    wholepopulationwisarray[currentvictim] = (long double) 1/newwi;
+    *sumofwis -= (long double) 1/newwi;//changed from psumofwis to pinversesum of wis 11/18/2019 changed back and reversed sign 11/22/2019
 
 }
 
@@ -672,7 +671,7 @@ void PerformOneTimeStep(int popsize, int totaltimesteps, int currenttimestep, lo
 
     int currentparent1, currentparent2, currentvictim;
 
-    currentvictim = ChooseVictimWithTree(wholepopulationwistree, popsize, *pInverseSumOfWis);
+    currentvictim = ChooseVictimWithTree(wholepopulationwistree, popsize, *psumofwis);
     currentparent1 = ChooseParent(popsize);
     currentparent2 = ChooseParent(popsize);
     while (currentparent1 == currentparent2) { //probably not ideal, since it'll never break with population sizes of zero or one.
