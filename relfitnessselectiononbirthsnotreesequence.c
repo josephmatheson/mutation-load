@@ -1,3 +1,4 @@
+
 /*
  * To change this license header, choose License Headers in Project Properties.
  * To change this template file, choose Tools | Templates
@@ -5,6 +6,8 @@
  */
 
 //current bug is that the code is reading the data backwards.
+//tree goes with inverse sum of wis, Fen_set
+//data output is normal sum of wis, log fitness, calcuate variance, slop of fitness
 
 #include<stdio.h>
 #include<float.h>
@@ -52,7 +55,7 @@ void InitializePopulation(long double *, long double *, int , double *, int, int
 //int ChooseVictimWithoutTree(long double *, int , long double);
 int SearchTree(int, int, long double, long double *);
 int ChooseParent(int);
-int ChooseVictimWithTree(long double *, int, long double);
+int ChooseVictimWithTree(long double *, int, long double, long double);
 void RecombineChromosomesIntoGamete(int, int, int, int , int , double *, double *, int, int *);
 int SampleFromPoisson(float );
 int DetermineNumberOfMutations(int, int, float);
@@ -303,7 +306,7 @@ void Fen_add(long double *tree, int numberofelementsintree, long double amountto
 {
 
     while (i < numberofelementsintree) {
-        tree[i] += amounttoadd;
+        tree[i] += amounttoadd;//changed from adding to subtraction 11/25/2019
         i += LSB(i+1);
 
         fprintf(verbosefilepointer, "");
@@ -367,12 +370,18 @@ void InitializePopulation(long double *wholepopulationwistree, long double *whol
 int SearchTree(int leftbound, int rightbound, long double targetvalue, long double *Fenwicktree)
 {
 	//double sumOfInverseFitnesses;
+
     int middle;
     middle = floor((leftbound+rightbound)/2);
     long double partialsumatmiddle;
     long double partialsumatmiddleminusone;
     partialsumatmiddle = Fen_sum(Fenwicktree, middle);
     partialsumatmiddleminusone = Fen_sum(Fenwicktree, middle-1);
+
+    fprintf(veryverbosefilepointer, "\nfenwick middle %d\n", middle);
+    fprintf(veryverbosefilepointer, "\npartial sum at middle %llf\n", partialsumatmiddle);
+    fprintf(veryverbosefilepointer, "\nparital sum at middle minus one %llf\n", partialsumatmiddleminusone);
+    fprintf(veryverbosefilepointer, "\ntarget value %llf\n", targetvalue);
 
     if(partialsumatmiddle < targetvalue) {
         if((middle+1) == rightbound) {
@@ -406,12 +415,17 @@ int ChooseParent(int populationsize)
 
 //In this model, individuals die at random. There's no selection happening here.
 //swapped choose parent with tree and choose victim
-int ChooseVictimWithTree(long double *wholepopulationwistree, int popsize, long double sumofwis)//using pinversesum intesting and is currently unchanged 11/18/2019
+int ChooseVictimWithTree(long double *wholepopulationwistree, int popsize, long double sumofwis, long double inverseSumOfWis)//using pinversesum intesting and is currently unchanged 11/18/2019
 {
 	long double randomnumberofdeath;
 			int newVictim = 0;
 
-			randomnumberofdeath = (ldexp(pcg32_random(), -32)) * sumofwis;
+			fprintf(veryverbosefilepointer,"\ninverse sum of wis is %llf\n", inverseSumOfWis);
+
+			randomnumberofdeath = (long double) ldexp(pcg32_random(), -32) * (inverseSumOfWis);
+
+			fprintf(veryverbosefilepointer,"\nrandom number of death is %llf\n", randomnumberofdeath);
+
 			//Above line generates a random integer between 0 and 2^32, then multiplies by 2^-32
 			//to generate a float between 0 and 1 and then multiplies by the sum of wis
 			//to get a number between 0 and the sum of wis.
@@ -566,7 +580,6 @@ double CaclulateWiInverse(double *parent1gamete, double *parent2gamete, int tota
 	double inverseNewWi = 0.0;
 	long double currentlinkageblockssum = 0.0;
 	int i;
-
 	for (i = 0; i < (totalindividualgenomelength/2); i++) {
 		currentlinkageblockssum += parent1gamete[i];
 	    currentlinkageblockssum += parent2gamete[i];
@@ -580,8 +593,12 @@ double CaclulateWiInverse(double *parent1gamete, double *parent2gamete, int tota
 
 void ReplaceVictim(double *parent1gamete, double *parent2gamete, int currentpopsize, int currentvictim, long double *sumofwis, double *wholepopulationgenomes, int totalindividualgenomelength, long double *wholepopulationwistree, long double *wholepopulationwisarray, long double *pInverseSumOfWis)
 {
+
     int i;
     double newwi;
+    double inverseNewWi;//added 11/25/2019
+
+    //fprintf(veryverbosefilepointer, "\ncurrent victim %d\n", currentvictim);
 	
     newwi = CalculateWi(parent1gamete, parent2gamete, totalindividualgenomelength);//last comment was silly ignore it 11/1/2019
 
@@ -591,12 +608,15 @@ void ReplaceVictim(double *parent1gamete, double *parent2gamete, int currentpops
 //It would be more efficient to build directly into victim slot, but right now it is possible for the victim to also be a parent, later add an if statement to more efficiently deal with more common case.
     }
 
-    *sumofwis += 1/wholepopulationwisarray[currentvictim];//changed from psumofwis to pinversesum of wis 11/18/2019 changed back and reversed sign (caused a reverse in the mutation rate where the positive mutation rate became negative and the negative became positive) 11/22/2019
+    *pInverseSumOfWis -= 1.0/wholepopulationwisarray[currentvictim];//changed from psumofwis to pinversesum of wis 11/18/2019 changed back and reversed sign (caused a reverse in the mutation rate where the positive mutation rate became negative and the negative became positive) 11/22/2019
+    *sumofwis -= wholepopulationwisarray[currentvictim];
     //replace at one point with inverse of wi if nessesary (highly likely)
-    Fen_set(wholepopulationwistree, currentpopsize, newwi, currentvictim);
+    inverseNewWi = 1.0 / newwi;//added 11/25/2019
+    Fen_set(wholepopulationwistree, currentpopsize, inverseNewWi, currentvictim);//switched out newwi for inverseNewWi 11/25/2019
     
-    wholepopulationwisarray[currentvictim] = (long double) 1/newwi;
-    *sumofwis -= (long double) 1/newwi;//changed from psumofwis to pinversesum of wis 11/18/2019 changed back and reversed sign 11/22/2019
+    wholepopulationwisarray[currentvictim] = (long double) newwi;
+    *pInverseSumOfWis += (long double) inverseNewWi;//changed from psumofwis to pinversesum of wis 11/18/2019 changed back and reversed sign 11/22/2019
+    *sumofwis += newwi;
 
 }
 
@@ -671,7 +691,7 @@ void PerformOneTimeStep(int popsize, int totaltimesteps, int currenttimestep, lo
 
     int currentparent1, currentparent2, currentvictim;
 
-    currentvictim = ChooseVictimWithTree(wholepopulationwistree, popsize, *psumofwis);
+    currentvictim = ChooseVictimWithTree(wholepopulationwistree, popsize, *psumofwis, *pInverseSumOfWis);
     currentparent1 = ChooseParent(popsize);
     currentparent2 = ChooseParent(popsize);
     while (currentparent1 == currentparent2) { //probably not ideal, since it'll never break with population sizes of zero or one.
@@ -691,7 +711,7 @@ double RunSimulation(char * Nxtimestepsname, char * popsizename, char * delmutra
 {
     int i, j, k;
     
-    char * rawdatafilename = (char *) malloc(200);
+    char * rawdatafilename = (char *) malloc(sizeof(char) * 200);//editied slightly if everythig blows up definitly this (11/25/2019)
     strcpy(rawdatafilename, "rawdatafor"); //starting the string that will be the name of the data file.
 
     strcat(rawdatafilename, "Nxtimesteps"); //for adding values of generations to the data name.
