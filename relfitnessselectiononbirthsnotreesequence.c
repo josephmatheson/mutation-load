@@ -253,7 +253,7 @@ long double FindFittestWi(long double *wisarray, int popsize)
         }
     }
 
-    //fprintf(veryverbosefilepointer, "\nnew fitness %lf", fittestwi);
+    //fprintf(veryverbosefilepointer, "\nnew fitness %lf\n", fittestwi);
 
     return fittestwi;
 }
@@ -378,10 +378,10 @@ int SearchTree(int leftbound, int rightbound, long double targetvalue, long doub
     partialsumatmiddle = Fen_sum(Fenwicktree, middle);
     partialsumatmiddleminusone = Fen_sum(Fenwicktree, middle-1);
 
-    fprintf(veryverbosefilepointer, "\nfenwick middle %d\n", middle);
-    fprintf(veryverbosefilepointer, "\npartial sum at middle %llf\n", partialsumatmiddle);
-    fprintf(veryverbosefilepointer, "\nparital sum at middle minus one %llf\n", partialsumatmiddleminusone);
-    fprintf(veryverbosefilepointer, "\ntarget value %llf\n", targetvalue);
+    //fprintf(veryverbosefilepointer, "\nfenwick middle %d\n", middle);
+    //fprintf(veryverbosefilepointer, "\npartial sum at middle %llf\n", partialsumatmiddle);
+    //fprintf(veryverbosefilepointer, "\nparital sum at middle minus one %llf\n", partialsumatmiddleminusone);
+    //fprintf(veryverbosefilepointer, "\ntarget value %llf\n", targetvalue);
 
     if(partialsumatmiddle < targetvalue) {
         if((middle+1) == rightbound) {
@@ -420,11 +420,11 @@ int ChooseVictimWithTree(long double *wholepopulationwistree, int popsize, long 
 	long double randomnumberofdeath;
 			int newVictim = 0;
 
-			fprintf(veryverbosefilepointer,"\ninverse sum of wis is %llf\n", inverseSumOfWis);
+			//fprintf(veryverbosefilepointer,"\ninverse sum of wis is %llf\n", inverseSumOfWis);
 
 			randomnumberofdeath = (long double) ldexp(pcg32_random(), -32) * (inverseSumOfWis);
 
-			fprintf(veryverbosefilepointer,"\nrandom number of death is %llf\n", randomnumberofdeath);
+			//fprintf(veryverbosefilepointer,"\nrandom number of death is %llf\n", randomnumberofdeath);
 
 			//Above line generates a random integer between 0 and 2^32, then multiplies by 2^-32
 			//to generate a float between 0 and 1 and then multiplies by the sum of wis
@@ -443,7 +443,7 @@ int ChooseVictimWithTree(long double *wholepopulationwistree, int popsize, long 
 			newVictim = (SearchTree(leftbound, rightbound, randomnumberofdeath, wholepopulationwistree));//fixed possible error
 
 			if(VERYVERBOSE == 1){
-				//fprintf(veryverbosefilepointer, "Choosen Victim %d\n", newVictim);
+				//fprintf(veryverbosefilepointer, "\nChoosen Victim %d\n", newVictim);
 			}
 
 			return newVictim;
@@ -532,7 +532,7 @@ int DetermineNumberOfMutations(int chromosomesize, int numberofchromosomes, floa
     
     int numberofmutations = SampleFromPoisson(meannumberofmutations);
 
-    //fprintf(veryverbosefilepointer, " Number of mutations %d ", numberofmutations);
+    //fprintf(veryverbosefilepointer, "\nNumber of mutations %d\n", numberofmutations);
 
     return numberofmutations;
 }
@@ -563,7 +563,7 @@ double CalculateWi(double *parent1gamete, double *parent2gamete, int totalindivi
     newwi = exp(currentlinkageblockssum);
 
     if(VERYVERBOSE == 1){
-    	//fprintf(veryverbosefilepointer, "Calculated fitness at a point %0.6lf ", newwi);
+    	//fprintf(veryverbosefilepointer, "\nCalculated fitness at a point %0.6lf\n", newwi);
     }
     return newwi;
 }
@@ -832,8 +832,9 @@ double RunSimulation(char * Nxtimestepsname, char * popsizename, char * delmutra
         
         //Following code performs N rounds of paired births and deaths.
         for (j = 0; j < popsize; j++) {
+
             currenttimestep += 1;            
-            PerformOneTimeStep(2, totaltimesteps, currenttimestep, wholepopulationwistree, wholepopulationwisarray, wholepopulationgenomes, psumofwis, pInverseSumOfWis, chromosomesize, numberofchromosomes, totalindividualgenomelength, deleteriousmutationrate, beneficialmutationrate, Sb, beneficialdistribution, parent1gamete, parent2gamete, randomnumbergeneratorforgamma);
+            PerformOneTimeStep(popsize, totaltimesteps, currenttimestep, wholepopulationwistree, wholepopulationwisarray, wholepopulationgenomes, psumofwis, pInverseSumOfWis, chromosomesize, numberofchromosomes, totalindividualgenomelength, deleteriousmutationrate, beneficialmutationrate, Sb, beneficialdistribution, parent1gamete, parent2gamete, randomnumbergeneratorforgamma);
             
         }
         
