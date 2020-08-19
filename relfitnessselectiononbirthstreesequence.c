@@ -4,6 +4,8 @@
  * and open the template in the editor.
  */
 
+//blah blah blah blah
+
 #include<stdio.h>
 #include<float.h>
 #include<string.h>
