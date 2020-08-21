@@ -9,8 +9,6 @@
  //tree goes with inverse sum of wis, Fen_set
  //data output is normal sum of wis, log fitness, calcuate variance, slop of fitness
 
-//test me
-
 #include<stdio.h>
 #include<stdlib.h>
 #include<float.h>
@@ -1588,6 +1586,9 @@ double RunSimulation(char* Nxtimestepsname, char* popsizename, char* delmutraten
             fflush(veryverbosefilepointer);
         }
 
+        fprintf(veryverbosefilepointer, "Run number %d", i);
+        fflush(veryverbosefilepointer);
+
 		PerformOneTimeStep(pPopSize, totaltimesteps, currenttimestep, wholepopulationwistree, wholepopulationgenomes, psumofwis, pInverseSumOfWis, chromosomesize, numberofchromosomes, totalindividualgenomelength, deleteriousmutationrate, beneficialmutationrate, Sb, beneficialdistribution, parent1gamete, parent2gamete, randomnumbergeneratorforgamma, birthBool, popArray, arrayOfFreeIndexes, arrayOfIndexes, i);
 
         if (RUNSIMULATIONMARKERS == 1) {
@@ -1685,11 +1686,10 @@ double RunSimulation(char* Nxtimestepsname, char* popsizename, char* delmutraten
             fflush(veryverbosefilepointer);
         }
 
-        if(runsPerformedThisGeneration%MAX_POP_SIZE = 0){
+        if(runsPerformedThisGeneration % MAX_POP_SIZE == 0){
 
         	averagePopsizeForGeneration = calcAvgPopSizeForGeneration(popSizeArrayForAverage);
         	generations++;
-        	runsPerformedThisGeneration = 1;
 
         	//moved for absolute fitness as there should be a check at the end of every generation also the code should just work a bit better
             if (isburninphaseover == 0) {
