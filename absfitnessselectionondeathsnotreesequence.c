@@ -9,6 +9,8 @@
  //tree goes with inverse sum of wis, Fen_set
  //data output is normal sum of wis, log fitness, calcuate variance, slop of fitness
 
+//test me
+
 #include<stdio.h>
 #include<stdlib.h>
 #include<float.h>
