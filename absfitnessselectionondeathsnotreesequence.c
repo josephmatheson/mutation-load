@@ -1556,6 +1556,10 @@ double RunSimulation(char* Nxtimestepsname, char* popsizename, char* delmutraten
         fflush(veryverbosefilepointer);
     }
 
+    fprintf(verbosefilepointer, "Run number %d\n", i);
+    fflush(verbosefilepointer);
+
+
     while (currenttimestep < timeSteps) {
 
     	//checkDoubles(arrayOfIndexes, arrayOfFreeIndexes, MAX_POP_SIZE, popsize);
@@ -1586,8 +1590,8 @@ double RunSimulation(char* Nxtimestepsname, char* popsizename, char* delmutraten
             fflush(veryverbosefilepointer);
         }
 
-        fprintf(veryverbosefilepointer, "Run number %d", i);
-        fflush(veryverbosefilepointer);
+        fprintf(verbosefilepointer, "Run number %d\n", i);
+        fflush(verbosefilepointer);
 
 		PerformOneTimeStep(pPopSize, totaltimesteps, currenttimestep, wholepopulationwistree, wholepopulationgenomes, psumofwis, pInverseSumOfWis, chromosomesize, numberofchromosomes, totalindividualgenomelength, deleteriousmutationrate, beneficialmutationrate, Sb, beneficialdistribution, parent1gamete, parent2gamete, randomnumbergeneratorforgamma, birthBool, popArray, arrayOfFreeIndexes, arrayOfIndexes, i);
 
