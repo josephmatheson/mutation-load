@@ -802,7 +802,7 @@ void InitializePopulation(long double* wholepopulationwistree, int populationsiz
     *psumofwis = (long double)populationsize;
     *pInverseSumOfWis = (long double)populationsize;
 
-
+    fprintf(verbosefilepointer, "InverseSum");
 
 }
 
@@ -1489,7 +1489,7 @@ double RunSimulation(char* Nxtimestepsname, char* popsizename, char* delmutraten
 
     allocateMemoryForSizeOfGenome(MAX_POP_SIZE, totalindividualgenomelength, popArray);
 
-    InitializePopulation(wholepopulationwistree, popsize, totalindividualgenomelength, totaltimesteps, psumofwis, pInverseSumOfWis, popArray, arrayOfIndexes, arrayOfFreeIndexes, MAX_POP_SIZE);
+    InitializePopulation(wholepopulationwistree, popsize, totalindividualgenomelength, totaltimesteps, psumofwis, &inverseSumOfWis, popArray, arrayOfIndexes, arrayOfFreeIndexes, MAX_POP_SIZE);
     /*Sets the intial populations structs to all have seperate fitnesses, death rates, and genomes.
      * Creates the intial wis tree in the code.
      * */
@@ -1599,6 +1599,9 @@ double RunSimulation(char* Nxtimestepsname, char* popsizename, char* delmutraten
             fprintf(veryverbosefilepointer, "Time step performed. \n");
             fflush(veryverbosefilepointer);
         }
+
+        fprintf(verbosefilepointer, "sum of death rates, %lf", inverseSumOfWis);
+        fflush(verbosefilepointer);
 
 		avgDeathRate = inverseSumOfWis/popsize;
 
