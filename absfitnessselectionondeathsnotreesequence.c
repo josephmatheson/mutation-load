@@ -1529,7 +1529,7 @@ double RunSimulation(char* Nxtimestepsname, char* popsizename, char* delmutraten
     int endofdelay = timeSteps - 1;
     int endofsimulation = timeSteps - 1;
     int timeStepsAfterBurnin = 0;
-    int runsPerformedThisGeneration = 1;
+    int timeStepsPreformed = 0;
     int generations = 0;
     int avgPopsizeForOneRun = 0;
     double* pNumberOfTimeStepsBetweenEvents;
@@ -1593,7 +1593,7 @@ double RunSimulation(char* Nxtimestepsname, char* popsizename, char* delmutraten
         fprintf(verbosefilepointer, "Run number %d\n", i);
         fflush(verbosefilepointer);
 
-		PerformOneTimeStep(pPopSize, totaltimesteps, currenttimestep, wholepopulationwistree, wholepopulationgenomes, psumofwis, pInverseSumOfWis, chromosomesize, numberofchromosomes, totalindividualgenomelength, deleteriousmutationrate, beneficialmutationrate, Sb, beneficialdistribution, parent1gamete, parent2gamete, randomnumbergeneratorforgamma, birthBool, popArray, arrayOfFreeIndexes, arrayOfIndexes, i);
+		PerformOneTimeStep(pPopSize, totaltimesteps, currenttimestep, wholepopulationwistree, wholepopulationgenomes, psumofwis, pInverseSumOfWis, chromosomesize, numberofchromosomes, totalindividualgenomelength, deleteriousmutationrate, beneficialmutationrate, Sb, beneficialdistribution, parent1gamete, parent2gamete, randomnumbergeneratorforgamma, birthBool, popArray, arrayOfFreeIndexes, arrayOfIndexes, timeStepsPreformed);
 
         if (RUNSIMULATIONMARKERS == 1) {
             fprintf(veryverbosefilepointer, "Time step performed. \n");
@@ -1610,14 +1610,14 @@ double RunSimulation(char* Nxtimestepsname, char* popsizename, char* delmutraten
             fflush(veryverbosefilepointer);
         }
 
-        if((i%200) == 0){
+        if((timeStepsPreformed % 200) == 0){
         	fprintf(rawdatafilepointer, "%lf,%d,%lf\n", currenttimestep, popsize, avgDeathRate);
         	fflush(rawdatafilepointer);
         }
         //This is to produce a histogram of the wis of the entire population from a single generation.
         //It's terrible and completely non-modular, but I just can't bring myself to add in two more user-input arguments.
         if (strcmp(typeofrun, "single") == 0) {
-            if (i == 1999) {
+            if (timeStepsPreformed == 1999) {
 
                 if (INDIVIDUALWIDATA == 1) {
                     if (VERYVERBOSE == 1) {
@@ -1638,8 +1638,8 @@ double RunSimulation(char* Nxtimestepsname, char* popsizename, char* delmutraten
         //The average fitness from any generation after this delay period is recorded in the array of average fitnesses.
 
         if(VERBOSE == 1){
-        	fprintf(verbosefilepointer, "Sum of Fitness at time %d is %lf\n", i, *psumofwis);
-        	fprintf(verbosefilepointer, "Popsize at time %d is %d\n", i, popsize);
+        	fprintf(verbosefilepointer, "Sum of Fitness at time %d is %lf\n", timeStepsPreformed, *psumofwis);
+        	fprintf(verbosefilepointer, "Popsize at time %d is %d\n", timeStepsPreformed, popsize);
         	fflush(verbosefilepointer);
         }
 
@@ -1647,7 +1647,7 @@ double RunSimulation(char* Nxtimestepsname, char* popsizename, char* delmutraten
             logaveragefitnesseachNtimesteps[timeStepsAfterBurnin] = log((double)*psumofwis / (double)popsize);//This refers to a completed time step not the time steps relative to the algorithm.
 
             if (VERYVERBOSE == 1) {
-                fprintf(veryverbosefilepointer, "log average fitness in generation %d, %d generations after burn-in, is: %f\n", i, timeStepsAfterBurnin, logaveragefitnesseachNtimesteps[timeStepsAfterBurnin]);
+                fprintf(veryverbosefilepointer, "log average fitness in generation %d, %d generations after burn-in, is: %f\n", timeStepsPreformed, timeStepsAfterBurnin, logaveragefitnesseachNtimesteps[timeStepsAfterBurnin]);
                 fflush(veryverbosefilepointer);
             }
             timeStepsAfterBurnin += 1;
@@ -1663,20 +1663,18 @@ double RunSimulation(char* Nxtimestepsname, char* popsizename, char* delmutraten
         //These lines end the simulation if fitness declines below 10^-10, which should represent a completely degraded population.
         currentfittestindividualswi = FindFittestWi(wholepopulationwisarray, popsize, popArray, arrayOfIndexes);
         if (currentfittestindividualswi < pow(10.0, -10.0)) {
-            fprintf(miscfilepointer, "\nFitness declined to less than 10^-10 during generation %d.", i + 1);
-            fprintf(summarydatafilepointer, "Fitness declined to catastrophic levels in generation %d.\n", i + 1);
-            endofsimulation = i;
-            i = timeSteps;
-            didpopulationcrash = 1;
+            fprintf(miscfilepointer, "\nFitness declined to less than 10^-10 during generation %d.", timeStepsPreformed + 1);
+            fprintf(summarydatafilepointer, "Fitness declined to catastrophic levels in generation %d.\n", timeStepsPreformed + 1);
+            endofsimulation = timeStepsPreformed;
+            timeStepsPreformed = timeSteps;
+            didpopulationcrash = timeStepsPreformed;
         }
 
         if (RUNSIMULATIONMARKERS == 1) {
             fprintf(veryverbosefilepointer, "Current fittest past \n");
             fflush(veryverbosefilepointer);
         }
-
-        i++;
-        runsPerformedThisGeneration++;
+        timeStepsPreformed++;
 
         /*This currently counts the number of generations. This should currently not be 10000
          * as a population to complete takes at least anywhere from 2-10000 runs but for the case
@@ -1693,7 +1691,7 @@ double RunSimulation(char* Nxtimestepsname, char* popsizename, char* delmutraten
             fflush(veryverbosefilepointer);
         }
 
-        if(runsPerformedThisGeneration % MAX_POP_SIZE == 0){
+        if(timeStepsPreformed % MAX_POP_SIZE == 0){
 
         	averagePopsizeForGeneration = calcAvgPopSizeForGeneration(popSizeArrayForAverage);
         	generations++;
@@ -1716,11 +1714,11 @@ double RunSimulation(char* Nxtimestepsname, char* popsizename, char* delmutraten
                     slopeofvariance = 0.0;
                     gsl_fit_linear(literallyjustlast200Ntimesteps, step, popSizeArrayForAverage, step, 200, &c0, &slopeofvariance, &cov00, &cov01, &cov11, &sumsq);
                     if (slopeofvariance < arbitrarynumber) {
-                        endofburninphase = i;
+                        endofburninphase = timeStepsPreformed;
                         endofdelay = endofburninphase + 500;
                         isburninphaseover = 1;
-                        fprintf(miscfilepointer, "Burn-in phase called as ending in generation %d\n", i + 1);
-                        fprintf(summarydatafilepointer, "Burn-in phase called as ending in generation %d\n", i + 1);
+                        fprintf(miscfilepointer, "Burn-in phase called as ending in generation %d\n", timeStepsPreformed + 1);
+                        fprintf(summarydatafilepointer, "Burn-in phase called as ending in generation %d\n", timeStepsPreformed + 1);
                         if (VERBOSE == 1) {
                             fflush(miscfilepointer);
                             fflush(summarydatafilepointer);
@@ -1742,7 +1740,7 @@ double RunSimulation(char* Nxtimestepsname, char* popsizename, char* delmutraten
         fflush(veryverbosefilepointer);
     }
     if (didpopulationcrash == 0) {
-        endofsimulation = i;
+        endofsimulation = timeStepsPreformed;
     }
     if (isburninphaseover == 1) {
     	/*
