@@ -56,7 +56,7 @@ typedef struct individual {
 
 void arrayPositionFlip(int popSize, int* arrayOfIndexes, int currentVictim);
 double averageDeathRate(int* indexArray, struct individual* popArray, int popSize);
-double calcAvgPopSizeForGeneration(double* popSizeArrayForAverage);
+double calcAvgPopSize(double* popSizeArrayForAverage);
 void storePopsizeForGenerations(double* popSizeArrayForAverage, int popsize);
 void UpdateLast200NTimeSteps(double*, double);
 void UpdateLast200GenStepsAbs(int* last200Gen, int newAveragePopSize);
@@ -80,9 +80,9 @@ int DetermineNumberOfMutations(int, int, float);
 void MutateGamete(int, int, double*, double);
 double CalculateWi(double*, double*, int);
 void ProduceMutatedRecombinedGamete(int, int, int, int, double, double, double, char*, double*, gsl_rng*, struct individual*, int*);
-void PerformOneTimeStep(int* pPopSize, int totaltimesteps, int currenttimestep, long double* wholepopulationwistree, double* wholepopulationgenomes, long double* psumofwis, long double* pInverseSumOfWis, int chromosomesize, int numberofchromosomes, int totalindividualgenomelength, double deleteriousmutationrate, double beneficialmutationrate, double Sb, char* beneficialdistribution, double* parent1gamete, double* parent2gamete, gsl_rng* randomnumbergeneratorforgamma, int birthBool, struct individual* popArray, int* freeIndexes, int* arrayOfIndexes, int eventNumber);
-double RunSimulation(char*, char*, char*, char*, char*, char*, char*, char*, int, int, int, int, double, double, double, char*, gsl_rng*, FILE*, FILE*, FILE*);
-int BracketZeroForSb(double*, double*, char*, char*, char*, char*, char*, char*, char*, int, int, int, int, double, double, double, char*, gsl_rng*, FILE*, FILE*, FILE*);
+void PerformOneTimeStep(int* pPopSize, int totaltimesteps, int currenttimestep, long double* wholepopulationwistree, double* wholepopulationgenomes, long double* psumofwis, long double* pInverseSumOfWis, int chromosomesize, int numberofchromosomes, int totalindividualgenomelength, double deleteriousmutationrate, double beneficialmutationrate, double Sb, char* beneficialdistribution, double* parent1gamete, double* parent2gamete, gsl_rng* randomnumbergeneratorforgamma, int birthBool, struct individual* popArray, int* freeIndexes, int* arrayOfIndexes, int eventNumber, int maxPopSize);
+double RunSimulation(char* Nxtimestepsname, char* popsizename, char* delmutratename, char* chromsizename, char* chromnumname, char* mubname, char* Sbname, char* typeofrun, int timeSteps, int initialPopSize, int maxPopSize, int chromosomesize, int numberofchromosomes, double deleteriousmutationrate, double beneficialmutationrate, double Sb, char* beneficialdistribution, gsl_rng* randomnumbergeneratorforgamma, FILE* veryverbosefilepointer, FILE* verbosefilepointer, FILE* miscfilepointer);
+int BracketZeroForSb(double* Sb1, double* Sb2, char* Nxtimestepsname, char* popsizename, char* delmutratename, char* chromsizename, char* chromnumname, char* mubname, char* typeofrun, int timeSteps, int initialPopSize, int maxPopSize, int chromosomesize, int numberofchromosomes, double deleteriousmutationrate, double beneficialmutationrate, double slopeforcontourline, char* beneficialdistribution, gsl_rng* randomnumbergeneratorforgamma, FILE* veryverbosefilepointer, FILE* verbosefilepointer, FILE* miscfilepointer);
 double BisectionMethodToFindSbWithZeroSlope(double*, double*, char*, char*, char*, char*, char*, char*, char*, int, int, int, int, double, double, double, char*, gsl_rng*, FILE*, FILE*, FILE*);
 double ExponentialDerivateOfUnitMeanOne(float idum);
 double rateOfDeathsCalc(double, double);
@@ -118,9 +118,11 @@ void main(int argc, char* argv[]) {
     int timeSteps;
     timeSteps = atoi(argv[1]);
 
-    //make max popsize maybe
-    int popsize;
-    popsize = atoi(argv[2]);
+    int initialPopsize;
+    initialPopsize = atoi(argv[2]);
+
+    int maxPopSize;
+    maxPopSize = atoi(argv[12]);
 
     double deleteriousmutationrate;
     deleteriousmutationrate = atof(argv[3]); //remember that this is the per-locus deleterious mutation rate, not the genome-wide mutation rate.
@@ -181,6 +183,7 @@ void main(int argc, char* argv[]) {
     finaldatafilepointer = fopen(finaldatafilename, "w");
 
     //root finding for values of Ub and Sb
+    //this is not possible for a abs fitness run so its being ignored
     if (strcmp(typeofrun, "root") == 0) {
 
         /*This type of run finds the Sb value for the given set of parameters
@@ -193,17 +196,17 @@ void main(int argc, char* argv[]) {
         double sbrequiredforzeroslopeoffitness;
         fprintf(miscfilepointer, "Beginning bracketing function.");
         fflush(miscfilepointer);
-        BracketZeroForSb(pSb1, pSb2, argv[1], argv[2], argv[3], argv[4], argv[5], argv[6], typeofrun, timeSteps, popsize, chromosomesize, numberofchromosomes, deleteriousmutationrate, beneficialmutationrate, slopeforcontourline, beneficialdistribution, randomnumbergeneratorforgamma, veryverbosefilepointer, verbosefilepointer, miscfilepointer);
+        BracketZeroForSb(pSb1, pSb2, argv[1], argv[2], argv[3], argv[4], argv[5], argv[6], typeofrun, timeSteps, initialPopsize, maxPopSize, chromosomesize, numberofchromosomes, deleteriousmutationrate, beneficialmutationrate, slopeforcontourline, beneficialdistribution, randomnumbergeneratorforgamma, veryverbosefilepointer, verbosefilepointer, miscfilepointer);
         fprintf(miscfilepointer, "Finished bracketing function.");
         fflush(miscfilepointer);
-        sbrequiredforzeroslopeoffitness = BisectionMethodToFindSbWithZeroSlope(pSb1, pSb2, argv[1], argv[2], argv[3], argv[4], argv[5], argv[6], typeofrun, timeSteps, popsize, chromosomesize, numberofchromosomes, deleteriousmutationrate, beneficialmutationrate, slopeforcontourline, beneficialdistribution, randomnumbergeneratorforgamma, veryverbosefilepointer, verbosefilepointer, miscfilepointer);
+        sbrequiredforzeroslopeoffitness = BisectionMethodToFindSbWithZeroSlope(pSb1, pSb2, argv[1], argv[2], argv[3], argv[4], argv[5], argv[6], typeofrun, timeSteps, initialPopsize, chromosomesize, numberofchromosomes, deleteriousmutationrate, beneficialmutationrate, slopeforcontourline, beneficialdistribution, randomnumbergeneratorforgamma, veryverbosefilepointer, verbosefilepointer, miscfilepointer);
         fprintf(finaldatafilepointer, "The value of Sb for which the slope of log fitness is zero with mub of %.10f is %.10f", beneficialmutationrate, sbrequiredforzeroslopeoffitness);
 
     }
     else if (strcmp(typeofrun, "single") == 0) {
 
         //This type of run just simulates a single population with the input parameters.
-        RunSimulation(argv[1], argv[2], argv[3], argv[4], argv[5], argv[6], argv[7], typeofrun, timeSteps, popsize, chromosomesize, numberofchromosomes, deleteriousmutationrate, beneficialmutationrate, Sb2, beneficialdistribution, randomnumbergeneratorforgamma, veryverbosefilepointer, verbosefilepointer, miscfilepointer);
+        RunSimulation(argv[1], argv[2], argv[3], argv[4], argv[5], argv[6], argv[7], typeofrun, timeSteps, initialPopsize, maxPopSize, chromosomesize, numberofchromosomes, deleteriousmutationrate, beneficialmutationrate, Sb2, beneficialdistribution, randomnumbergeneratorforgamma, veryverbosefilepointer, verbosefilepointer, miscfilepointer);
 
     }
     else {
@@ -265,7 +268,7 @@ double averageDeathRate(int* indexArray, struct individual* popArray, int popSiz
 }
 
 //function calculates average popsize
-double calcAvgPopSizeForGeneration(double* popSizeArrayForAverage)
+double calcAvgPopSize(double* popSizeArrayForAverage)
 {
 	int i;
 	double averagePopSize;
@@ -1326,7 +1329,7 @@ void ProduceMutatedRecombinedGamete(int chromosomesize, int numberofchromosomes,
 
 }
 
-void PerformOneTimeStep(int* pPopSize, int totaltimesteps, int currenttimestep, long double* wholepopulationwistree, double* wholepopulationgenomes, long double* psumofwis, long double* pInverseSumOfWis, int chromosomesize, int numberofchromosomes, int totalindividualgenomelength, double deleteriousmutationrate, double beneficialmutationrate, double Sb, char* beneficialdistribution, double* parent1gamete, double* parent2gamete, gsl_rng* randomnumbergeneratorforgamma, int birthBool, struct individual* popArray, int* freeIndexes, int* arrayOfIndexes, int eventNumber)
+void PerformOneTimeStep(int* pPopSize, int totaltimesteps, int currenttimestep, long double* wholepopulationwistree, double* wholepopulationgenomes, long double* psumofwis, long double* pInverseSumOfWis, int chromosomesize, int numberofchromosomes, int totalindividualgenomelength, double deleteriousmutationrate, double beneficialmutationrate, double Sb, char* beneficialdistribution, double* parent1gamete, double* parent2gamete, gsl_rng* randomnumbergeneratorforgamma, int birthBool, struct individual* popArray, int* freeIndexes, int* arrayOfIndexes, int eventNumber, int maxPopSize)
 {
 
     if (PERFORMONETIMESTEPMARKERS == 1) {
@@ -1370,7 +1373,7 @@ void PerformOneTimeStep(int* pPopSize, int totaltimesteps, int currenttimestep, 
         }
 
     	if(popSize < 10000){
-        	performBirth(parent1gamete, parent2gamete, pPopSize, currentvictim, psumofwis, totalindividualgenomelength, wholepopulationwistree, pInverseSumOfWis, popArray, freeIndexes, arrayOfIndexes, MAX_POP_SIZE, eventNumber);
+        	performBirth(parent1gamete, parent2gamete, pPopSize, currentvictim, psumofwis, totalindividualgenomelength, wholepopulationwistree, pInverseSumOfWis, popArray, freeIndexes, arrayOfIndexes, maxPopSize, eventNumber);
     	}
     	else{
 
@@ -1396,7 +1399,7 @@ void PerformOneTimeStep(int* pPopSize, int totaltimesteps, int currenttimestep, 
 
 }
 
-double RunSimulation(char* Nxtimestepsname, char* popsizename, char* delmutratename, char* chromsizename, char* chromnumname, char* mubname, char* Sbname, char* typeofrun, int timeSteps, int popsize, int chromosomesize, int numberofchromosomes, double deleteriousmutationrate, double beneficialmutationrate, double Sb, char* beneficialdistribution, gsl_rng* randomnumbergeneratorforgamma, FILE* veryverbosefilepointer, FILE* verbosefilepointer, FILE* miscfilepointer)
+double RunSimulation(char* Nxtimestepsname, char* popsizename, char* delmutratename, char* chromsizename, char* chromnumname, char* mubname, char* Sbname, char* typeofrun, int timeSteps, int initialPopSize, int maxPopSize, int chromosomesize, int numberofchromosomes, double deleteriousmutationrate, double beneficialmutationrate, double Sb, char* beneficialdistribution, gsl_rng* randomnumbergeneratorforgamma, FILE* veryverbosefilepointer, FILE* verbosefilepointer, FILE* miscfilepointer)
 {
     int i, j, k, w;
 
@@ -1441,18 +1444,19 @@ double RunSimulation(char* Nxtimestepsname, char* popsizename, char* delmutraten
     const int MAX_POP_SIZE = 10000;//these are for now const integers but will be entered in the code at the end (6/3/2020)
     const int INITIAL_POP_SIZE = 100;//these are for now const integers but will be entered in the code at the end (6/3/2020)
 
-    int totaltimesteps = timeSteps * popsize;
+    int totaltimesteps = timeSteps * MAX_POP_SIZE;
     int currenttimestep = 0;
     int popSizeFiller;//Original name was popSize but conflicts with popsize variable
     int totalpopulationgenomelength;
     int totalindividualgenomelength;
     int birthBool;
+    int popsize;
     int* arrayOfIndexes;
     int* arrayOfFreeIndexes;
     int* pPopSize;
 
     popsize = INITIAL_POP_SIZE;
-    totalpopulationgenomelength = popsize * numberofchromosomes * 2 * chromosomesize;
+    totalpopulationgenomelength = MAX_POP_SIZE * numberofchromosomes * 2 * chromosomesize;
     totalindividualgenomelength = numberofchromosomes * 2 * chromosomesize;
     arrayOfIndexes = malloc(sizeof(int) * MAX_POP_SIZE);
     arrayOfFreeIndexes = malloc(sizeof(int) * MAX_POP_SIZE);
@@ -1489,7 +1493,7 @@ double RunSimulation(char* Nxtimestepsname, char* popsizename, char* delmutraten
 
     allocateMemoryForSizeOfGenome(MAX_POP_SIZE, totalindividualgenomelength, popArray);
 
-    InitializePopulation(wholepopulationwistree, popsize, totalindividualgenomelength, totaltimesteps, psumofwis, &inverseSumOfWis, popArray, arrayOfIndexes, arrayOfFreeIndexes, MAX_POP_SIZE);
+    InitializePopulation(wholepopulationwistree, INITIAL_POP_SIZE, totalindividualgenomelength, totaltimesteps, psumofwis, &inverseSumOfWis, popArray, arrayOfIndexes, arrayOfFreeIndexes, MAX_POP_SIZE);
     /*Sets the intial populations structs to all have seperate fitnesses, death rates, and genomes.
      * Creates the intial wis tree in the code.
      * */
@@ -1522,14 +1526,13 @@ double RunSimulation(char* Nxtimestepsname, char* popsizename, char* delmutraten
     popVarianceArray = malloc(sizeof(double) * MAX_POP_SIZE);
 
     double slopeofvariance;
-    double avgPopForGeneration;
     int isburninphaseover = 0;
     int didpopulationcrash = 0;
     int endofburninphase;
     int endofdelay = timeSteps - 1;
     int endofsimulation = timeSteps - 1;
     int timeStepsAfterBurnin = 0;
-    int timeStepsPreformed = 0;
+    int EventsPreformed = 0;
     int generations = 0;
     int avgPopsizeForOneRun = 0;
     double* pNumberOfTimeStepsBetweenEvents;
@@ -1541,7 +1544,7 @@ double RunSimulation(char* Nxtimestepsname, char* popsizename, char* delmutraten
     double slopeoflogfitness;
     double variancesum;
     double variancePop;
-    double averagePopsizeForGeneration;
+    double averagePopsize;
     double avgDeathRate;
 
     if (RUNSIMULATIONMARKERS == 1) {
@@ -1569,7 +1572,7 @@ double RunSimulation(char* Nxtimestepsname, char* popsizename, char* delmutraten
     	//this is 3 for right now as the fenwick tree seems to crash at this point
         if(popsize <= 3){
         		//add data for
-        		fprintf(summarydatafilepointer, "Population died during run at time step %d", i);
+        		fprintf(summarydatafilepointer, "Population died during run at time step %d", EventsPreformed);
         		fflush(summarydatafilepointer);
 
         		break;
@@ -1593,7 +1596,7 @@ double RunSimulation(char* Nxtimestepsname, char* popsizename, char* delmutraten
         fprintf(verbosefilepointer, "Run number %d\n", i);
         fflush(verbosefilepointer);
 
-		PerformOneTimeStep(pPopSize, totaltimesteps, currenttimestep, wholepopulationwistree, wholepopulationgenomes, psumofwis, pInverseSumOfWis, chromosomesize, numberofchromosomes, totalindividualgenomelength, deleteriousmutationrate, beneficialmutationrate, Sb, beneficialdistribution, parent1gamete, parent2gamete, randomnumbergeneratorforgamma, birthBool, popArray, arrayOfFreeIndexes, arrayOfIndexes, timeStepsPreformed);
+		PerformOneTimeStep(pPopSize, totaltimesteps, currenttimestep, wholepopulationwistree, wholepopulationgenomes, psumofwis, pInverseSumOfWis, chromosomesize, numberofchromosomes, totalindividualgenomelength, deleteriousmutationrate, beneficialmutationrate, Sb, beneficialdistribution, parent1gamete, parent2gamete, randomnumbergeneratorforgamma, birthBool, popArray, arrayOfFreeIndexes, arrayOfIndexes, EventsPreformed);
 
         if (RUNSIMULATIONMARKERS == 1) {
             fprintf(veryverbosefilepointer, "Time step performed. \n");
@@ -1610,14 +1613,14 @@ double RunSimulation(char* Nxtimestepsname, char* popsizename, char* delmutraten
             fflush(veryverbosefilepointer);
         }
 
-        if((timeStepsPreformed % 200) == 0){
+        if((EventsPreformed % 200) == 0){
         	fprintf(rawdatafilepointer, "%lf,%d,%lf\n", currenttimestep, popsize, avgDeathRate);
         	fflush(rawdatafilepointer);
         }
         //This is to produce a histogram of the wis of the entire population from a single generation.
         //It's terrible and completely non-modular, but I just can't bring myself to add in two more user-input arguments.
         if (strcmp(typeofrun, "single") == 0) {
-            if (timeStepsPreformed == 1999) {
+            if (EventsPreformed == 1999) {
 
                 if (INDIVIDUALWIDATA == 1) {
                     if (VERYVERBOSE == 1) {
@@ -1638,8 +1641,8 @@ double RunSimulation(char* Nxtimestepsname, char* popsizename, char* delmutraten
         //The average fitness from any generation after this delay period is recorded in the array of average fitnesses.
 
         if(VERBOSE == 1){
-        	fprintf(verbosefilepointer, "Sum of Fitness at time %d is %lf\n", timeStepsPreformed, *psumofwis);
-        	fprintf(verbosefilepointer, "Popsize at time %d is %d\n", timeStepsPreformed, popsize);
+        	fprintf(verbosefilepointer, "Sum of Fitness at time %d is %lf\n", EventsPreformed, *psumofwis);
+        	fprintf(verbosefilepointer, "Popsize at time %d is %d\n", EventsPreformed, popsize);
         	fflush(verbosefilepointer);
         }
 
@@ -1647,7 +1650,7 @@ double RunSimulation(char* Nxtimestepsname, char* popsizename, char* delmutraten
             logaveragefitnesseachNtimesteps[timeStepsAfterBurnin] = log((double)*psumofwis / (double)popsize);//This refers to a completed time step not the time steps relative to the algorithm.
 
             if (VERYVERBOSE == 1) {
-                fprintf(veryverbosefilepointer, "log average fitness in generation %d, %d generations after burn-in, is: %f\n", timeStepsPreformed, timeStepsAfterBurnin, logaveragefitnesseachNtimesteps[timeStepsAfterBurnin]);
+                fprintf(veryverbosefilepointer, "log average fitness in event number %d, %d timesteps after burn-in, is: %f\n", EventsPreformed, timeStepsAfterBurnin, logaveragefitnesseachNtimesteps[timeStepsAfterBurnin]);
                 fflush(veryverbosefilepointer);
             }
             timeStepsAfterBurnin += 1;
@@ -1663,18 +1666,18 @@ double RunSimulation(char* Nxtimestepsname, char* popsizename, char* delmutraten
         //These lines end the simulation if fitness declines below 10^-10, which should represent a completely degraded population.
         currentfittestindividualswi = FindFittestWi(wholepopulationwisarray, popsize, popArray, arrayOfIndexes);
         if (currentfittestindividualswi < pow(10.0, -10.0)) {
-            fprintf(miscfilepointer, "\nFitness declined to less than 10^-10 during generation %d.", timeStepsPreformed + 1);
-            fprintf(summarydatafilepointer, "Fitness declined to catastrophic levels in generation %d.\n", timeStepsPreformed + 1);
-            endofsimulation = timeStepsPreformed;
-            timeStepsPreformed = timeSteps;
-            didpopulationcrash = timeStepsPreformed;
+            fprintf(miscfilepointer, "\nFitness declined to less than 10^-10 during generation %d.", EventsPreformed + 1);
+            fprintf(summarydatafilepointer, "Fitness declined to catastrophic levels in generation %d.\n", EventsPreformed + 1);
+            endofsimulation = EventsPreformed;
+            EventsPreformed = timeSteps;
+            didpopulationcrash = EventsPreformed;
         }
 
         if (RUNSIMULATIONMARKERS == 1) {
             fprintf(veryverbosefilepointer, "Current fittest past \n");
             fflush(veryverbosefilepointer);
         }
-        timeStepsPreformed++;
+        EventsPreformed++;
 
         /*This currently counts the number of generations. This should currently not be 10000
          * as a population to complete takes at least anywhere from 2-10000 runs but for the case
@@ -1691,15 +1694,15 @@ double RunSimulation(char* Nxtimestepsname, char* popsizename, char* delmutraten
             fflush(veryverbosefilepointer);
         }
 
-        if(timeStepsPreformed % MAX_POP_SIZE == 0){
+        if(EventsPreformed % MAX_POP_SIZE == 0){
 
-        	averagePopsizeForGeneration = calcAvgPopSizeForGeneration(popSizeArrayForAverage);
-        	generations++;
+        	averagePopsize = calcAvgPopSize(popSizeArrayForAverage);
+        	i++;
 
         	//moved for absolute fitness as there should be a check at the end of every generation also the code should just work a bit better
             if (isburninphaseover == 0) {
-            	UpdateLast200NTimeSteps(last200Ntimestepsvariance, avgPopForGeneration);
-                UpdateLast200NTimeSteps(literallyjustlast200Ntimesteps, generations + 1);
+            	UpdateLast200NTimeSteps(last200Ntimestepsvariance, averagePopsize);
+                UpdateLast200NTimeSteps(literallyjustlast200Ntimesteps, i + 1);
 
                 if (RUNSIMULATIONMARKERS == 1) {
                     fprintf(veryverbosefilepointer, "Array update performed \n");
@@ -1710,15 +1713,15 @@ double RunSimulation(char* Nxtimestepsname, char* popsizename, char* delmutraten
                 //because of setting pre-simulation generations to zeroes
                 //I just won't start looking for the end of the burn-in phase until 200 generations
                 //This would be a mild problem if a simulation should end in 200 generations, but that shouldn't ever happen with the DFE I'm using.
-                if (generations > 199) {
+                if (i > 199) {
                     slopeofvariance = 0.0;
                     gsl_fit_linear(literallyjustlast200Ntimesteps, step, popSizeArrayForAverage, step, 200, &c0, &slopeofvariance, &cov00, &cov01, &cov11, &sumsq);
                     if (slopeofvariance < arbitrarynumber) {
-                        endofburninphase = timeStepsPreformed;
+                        endofburninphase = EventsPreformed;
                         endofdelay = endofburninphase + 500;
                         isburninphaseover = 1;
-                        fprintf(miscfilepointer, "Burn-in phase called as ending in generation %d\n", timeStepsPreformed + 1);
-                        fprintf(summarydatafilepointer, "Burn-in phase called as ending in generation %d\n", timeStepsPreformed + 1);
+                        fprintf(miscfilepointer, "Burn-in phase called as ending in generation %d\n", EventsPreformed + 1);
+                        fprintf(summarydatafilepointer, "Burn-in phase called as ending in generation %d\n", EventsPreformed + 1);
                         if (VERBOSE == 1) {
                             fflush(miscfilepointer);
                             fflush(summarydatafilepointer);
@@ -1740,7 +1743,7 @@ double RunSimulation(char* Nxtimestepsname, char* popsizename, char* delmutraten
         fflush(veryverbosefilepointer);
     }
     if (didpopulationcrash == 0) {
-        endofsimulation = timeStepsPreformed;
+        endofsimulation = EventsPreformed;
     }
     if (isburninphaseover == 1) {
     	/*
@@ -1801,7 +1804,7 @@ double RunSimulation(char* Nxtimestepsname, char* popsizename, char* delmutraten
 //The following function is heavily modified from Numerical Recipes in C, Second Edition.
 //For large population sizes, populations with mean Sb > 0 may actually have a more negative fitness slope than mean Sb = 0.
 //
-int BracketZeroForSb(double* Sb1, double* Sb2, char* Nxtimestepsname, char* popsizename, char* delmutratename, char* chromsizename, char* chromnumname, char* mubname, char* typeofrun, int timeSteps, int popsize, int chromosomesize, int numberofchromosomes, double deleteriousmutationrate, double beneficialmutationrate, double slopeforcontourline, char* beneficialdistribution, gsl_rng* randomnumbergeneratorforgamma, FILE* veryverbosefilepointer, FILE* verbosefilepointer, FILE* miscfilepointer) {
+int BracketZeroForSb(double* Sb1, double* Sb2, char* Nxtimestepsname, char* popsizename, char* delmutratename, char* chromsizename, char* chromnumname, char* mubname, char* typeofrun, int timeSteps, int initialPopSize, int maxPopSize, int chromosomesize, int numberofchromosomes, double deleteriousmutationrate, double beneficialmutationrate, double slopeforcontourline, char* beneficialdistribution, gsl_rng* randomnumbergeneratorforgamma, FILE* veryverbosefilepointer, FILE* verbosefilepointer, FILE* miscfilepointer) {
     int i, numberoftries;
     numberoftries = 10;
     float factor = 0.01;
@@ -1813,8 +1816,8 @@ int BracketZeroForSb(double* Sb1, double* Sb2, char* Nxtimestepsname, char* pops
         fflush(verbosefilepointer);
     }
     float resultingslope1, resultingslope2;
-    resultingslope1 = RunSimulation(Nxtimestepsname, popsizename, delmutratename, chromsizename, chromnumname, mubname, Sb1name, typeofrun, timeSteps, popsize, chromosomesize, numberofchromosomes, deleteriousmutationrate, beneficialmutationrate, *Sb1, beneficialdistribution, randomnumbergeneratorforgamma, veryverbosefilepointer, verbosefilepointer, miscfilepointer);
-    resultingslope2 = RunSimulation(Nxtimestepsname, popsizename, delmutratename, chromsizename, chromnumname, mubname, Sb2name, typeofrun, timeSteps, popsize, chromosomesize, numberofchromosomes, deleteriousmutationrate, beneficialmutationrate, *Sb2, beneficialdistribution, randomnumbergeneratorforgamma, veryverbosefilepointer, verbosefilepointer, miscfilepointer);
+    resultingslope1 = RunSimulation(Nxtimestepsname, popsizename, delmutratename, chromsizename, chromnumname, mubname, Sb1name, typeofrun, timeSteps, initialPopSize, maxPopSize, chromosomesize, numberofchromosomes, deleteriousmutationrate, beneficialmutationrate, *Sb1, beneficialdistribution, randomnumbergeneratorforgamma, veryverbosefilepointer, verbosefilepointer, miscfilepointer);
+    resultingslope2 = RunSimulation(Nxtimestepsname, popsizename, delmutratename, chromsizename, chromnumname, mubname, Sb2name, typeofrun, timeSteps, initialPopSize, maxPopSize, chromosomesize, numberofchromosomes, deleteriousmutationrate, beneficialmutationrate, *Sb2, beneficialdistribution, randomnumbergeneratorforgamma, veryverbosefilepointer, verbosefilepointer, miscfilepointer);
     if (VERBOSE == 1) {
         fprintf(verbosefilepointer, "First two slopes are: %.6f for sb %.6f, and %.6f for sb %.6f\n", resultingslope1, *Sb1, resultingslope2, *Sb2);
         fflush(verbosefilepointer);
@@ -1840,7 +1843,7 @@ int BracketZeroForSb(double* Sb1, double* Sb2, char* Nxtimestepsname, char* pops
                 fprintf(verbosefilepointer, "Starting run with new sb2 = %.6f\n", *Sb2);
                 fflush(verbosefilepointer);
             }
-            resultingslope2 = RunSimulation(Nxtimestepsname, popsizename, delmutratename, chromsizename, chromnumname, mubname, Sb2name, typeofrun, timeSteps, popsize, chromosomesize, numberofchromosomes, deleteriousmutationrate, beneficialmutationrate, *Sb2, beneficialdistribution, randomnumbergeneratorforgamma, veryverbosefilepointer, verbosefilepointer, miscfilepointer);
+            resultingslope2 = RunSimulation(Nxtimestepsname, popsizename, delmutratename, chromsizename, chromnumname, mubname, Sb2name, typeofrun, timeSteps, initialPopSize, maxPopSize, chromosomesize, numberofchromosomes, deleteriousmutationrate, beneficialmutationrate, *Sb2, beneficialdistribution, randomnumbergeneratorforgamma, veryverbosefilepointer, verbosefilepointer, miscfilepointer);
             if (VERBOSE == 1) {
                 fprintf(verbosefilepointer, "Slope for sb %.6f = %.6f\n", *Sb2, resultingslope2);
                 fflush(verbosefilepointer);
@@ -1855,7 +1858,7 @@ int BracketZeroForSb(double* Sb1, double* Sb2, char* Nxtimestepsname, char* pops
                 fprintf(verbosefilepointer, "Starting run with new sb1 = %.6f\n", *Sb2);
                 fflush(verbosefilepointer);
             }
-            resultingslope1 = RunSimulation(Nxtimestepsname, popsizename, delmutratename, chromsizename, chromnumname, mubname, Sb2name, typeofrun, timeSteps, popsize, chromosomesize, numberofchromosomes, deleteriousmutationrate, beneficialmutationrate, *Sb2, beneficialdistribution, randomnumbergeneratorforgamma, veryverbosefilepointer, verbosefilepointer, miscfilepointer);
+            resultingslope1 = RunSimulation(Nxtimestepsname, popsizename, delmutratename, chromsizename, chromnumname, mubname, Sb2name, typeofrun, timeSteps, initialPopSize, maxPopSize, chromosomesize, numberofchromosomes, deleteriousmutationrate, beneficialmutationrate, *Sb2, beneficialdistribution, randomnumbergeneratorforgamma, veryverbosefilepointer, verbosefilepointer, miscfilepointer);
             if (VERBOSE == 1) {
                 fprintf(verbosefilepointer, "Slope for sb %.6f = %.6f\n", *Sb2, resultingslope2);
                 fflush(verbosefilepointer);
