@@ -54,44 +54,44 @@ typedef struct individual {
 
 };
 
-void arrayPositionFlip(int popSize, int* arrayOfIndexes, int currentVictim);
-double averageDeathRate(int* indexArray, struct individual* popArray, int popSize);
-double calcAvgPopSize(double* popSizeArrayForAverage);
-void storePopsizeForGenerations(double* popSizeArrayForAverage, int popsize);
+void arrayPositionFlip(int, int*, int);
+double averageDeathRate(int*, struct individual*, int);
+double calcAvgPopSize(double*);
+void storePopsizeForGenerations(double*, int, int);
 void UpdateLast200NTimeSteps(double*, double);
-void UpdateLast200GenStepsAbs(int* last200Gen, int newAveragePopSize);
+void UpdateLast200GenStepsAbs(int*, int);
 void DoubleSwap(long double*, long double*);
 void DoubleBubbleSort(long double*, int);
 double CalculateVarianceInLogFitness(int, long double*, long double, struct individual*, int*);
-long double FindFittestWi(long double*, int, struct individual*, int*);
-double CalculateSlopeOfLogFitness(int endofsimulation, int endofburninphase, int numberOfTimeSteps, double* logaveragefitnesseachgeneration);
+long double FindFittestWi(int popsize, struct individual* popArray, int* indexArray);
+double CalculateSlopeOfLogFitness(int, int, int, double*);
 long double Fen_sum(long double*, int);
 void Fen_add(long double*, int, long double, int);
 long double Fen_range(long double*, int, int);
 long double Fen_get(long double*, int);
 void Fen_set(long double*, int, long double, int);
-void InitializePopulation(long double* wholepopulationwistree, int populationsize, int singleIndividualGenomeLength, int totaltimesteps, long double* psumofwis, long double* pInverseSumOfWis, struct individual* popArray, int* indexArray, int* freeIndexes, int MAX_POP_SIZE);
-int SearchTree(int leftbound, int rightbound, long double targetvalue, long double* Fenwicktree, int eventNumber);
+void InitializePopulation(long double*, int, int, long double*, long double*, struct individual*, int*, int*, int);
+int SearchTree(int, int, long double, long double*, int);
 int ChooseParent(int);
-int ChooseVictimWithTree(long double* wholepopulationwistree, int popsize, long double sumofwis, long double inverseSumOfWis, int numberOfRuns);
+int ChooseVictimWithTree(long double*, int, long double, long double, int);
 void RecombineChromosomesIntoGamete(int, int, int, double*, int, int*, struct individual*, int *);
 int SampleFromPoisson(float);
 int DetermineNumberOfMutations(int, int, float);
 void MutateGamete(int, int, double*, double);
 double CalculateWi(double*, double*, int);
 void ProduceMutatedRecombinedGamete(int, int, int, int, double, double, double, char*, double*, gsl_rng*, struct individual*, int*);
-void PerformOneTimeStep(int* pPopSize, int totaltimesteps, int currenttimestep, long double* wholepopulationwistree, double* wholepopulationgenomes, long double* psumofwis, long double* pInverseSumOfWis, int chromosomesize, int numberofchromosomes, int totalindividualgenomelength, double deleteriousmutationrate, double beneficialmutationrate, double Sb, char* beneficialdistribution, double* parent1gamete, double* parent2gamete, gsl_rng* randomnumbergeneratorforgamma, int birthBool, struct individual* popArray, int* freeIndexes, int* arrayOfIndexes, int eventNumber, int maxPopSize);
-double RunSimulation(char* Nxtimestepsname, char* popsizename, char* delmutratename, char* chromsizename, char* chromnumname, char* mubname, char* Sbname, char* typeofrun, int timeSteps, int initialPopSize, int maxPopSize, int chromosomesize, int numberofchromosomes, double deleteriousmutationrate, double beneficialmutationrate, double Sb, char* beneficialdistribution, gsl_rng* randomnumbergeneratorforgamma, FILE* veryverbosefilepointer, FILE* verbosefilepointer, FILE* miscfilepointer);
-int BracketZeroForSb(double* Sb1, double* Sb2, char* Nxtimestepsname, char* popsizename, char* delmutratename, char* chromsizename, char* chromnumname, char* mubname, char* typeofrun, int timeSteps, int initialPopSize, int maxPopSize, int chromosomesize, int numberofchromosomes, double deleteriousmutationrate, double beneficialmutationrate, double slopeforcontourline, char* beneficialdistribution, gsl_rng* randomnumbergeneratorforgamma, FILE* veryverbosefilepointer, FILE* verbosefilepointer, FILE* miscfilepointer);
-double BisectionMethodToFindSbWithZeroSlope(double* Sb1, double* Sb2, char* Nxtimestepsname, char* popsizename, char* delmutratename, char* chromsizename, char* chromnumname, char* mubname, char* typeofrun, int timeSteps, int popsize, int maxPopSize, int chromosomesize, int numberofchromosomes, double deleteriousmutationrate, double beneficialmutationrate, double slopeforcontourline, char* beneficialdistribution, gsl_rng* randomnumbergeneratorforgamma, FILE* veryverbosefilepointer, FILE* verbosefilepointer, FILE* miscfilepointer);
+void PerformOneTimeStep(int*, int, long double*, double*, long double*, long double*, int, int, int, double, double, double, char*, double*, double*, gsl_rng*, int, struct individual*, int*, int*, int, int);
+double RunSimulation(char*, char*, char*, char*, char*, char*, char*, char*, int, int, int, int, int, double, double, double, char*, gsl_rng*, FILE*, FILE*, FILE*);
+int BracketZeroForSb(double*, double*, char*, char*, char*, char*, char*, char*, char*, int, int, int, int, int, double, double, double, char*, gsl_rng*, FILE*, FILE*, FILE*);
+double BisectionMethodToFindSbWithZeroSlope(double*, double*, char*, char*, char*, char*, char*, char*, char*, int, int, int, int, int, double, double, double, char*, gsl_rng*, FILE*, FILE*, FILE*);
 double ExponentialDerivateOfUnitMeanOne(float idum);
 double rateOfDeathsCalc(double, double);
-double rateOfBirthsCalc(int populationSize, double b, int MAX_POP_SIZE);
-int discoverEvent(double deathRate, double birthRate);
-int monteCarloStep(int popSize, double sumWi, double* timeElapsed, double sumOfDeathRates, struct individual* popArray, int MAX_POP_SIZE);
+double rateOfBirthsCalc(int, double, int);
+int discoverEvent(double, double);
+int monteCarloStep(int, double, double*, double, struct individual*, int);
 double averageWiOfStructs(int*, int*, int);
-void performDeath(int* currentpopsize, int currentvictim, long double* sumofwis, long double* wholepopulationwistree, long double* pInverseSumOfWis, struct individual* popArray, int* arrayOfIndexes, int* arrayOfFreeIndexes, int MAX_POP_SIZE);
-void performBirth(double* parent1gamete, double* parent2gamete, int* pCurrentPopsize, int currentvictim, long double* pSumOfWis, int totalindividualgenomelength, long double* wholepopulationwistree, long double* pInverseSumOfWis, struct individual* popArray, int* freeIndexes, int* arrayOfIndexes, const int MAX_POPSIZE, int eventNumber);
+void performDeath(int*, int, long double*, long double*, long double*, struct individual*, int*, int*, int);
+void performBirth(double*, double*, int*, int, long double*, int, long double*, long double*, struct individual*, int*, int*, const int, int);
 double sumOfWiOfStructs(int*, struct individual*, int);
 void allocateMemoryForSizeOfGenome(int, int, struct individual*);
 void checkDoubles(int*, int*, int, int);
@@ -285,36 +285,33 @@ double calcAvgPopSize(double* popSizeArrayForAverage)
 }
 
 //function simply stores average population over a generation
-void storePopsizeForGenerations(double* popSizeArrayForAverage, int popsize)
+void storePopsizeForGenerations(double* popSizeArrayForAverage, int popSize, int maxPopSize)
 {
-	int const MAX_POP_SIZE = 10000;
-	int const MAX_POP_SIZE_MINUS_ONE = MAX_POP_SIZE - 1;
+	int const MAX_POP_SIZE_MINUS_ONE = maxPopSize - 1;
 	int i;
-	double storage[MAX_POP_SIZE];
+	double storage[maxPopSize];
 	for(i = 0; i < MAX_POP_SIZE_MINUS_ONE; i++){
 		storage[i] = popSizeArrayForAverage[i + 1];
 	}
-	storage[MAX_POP_SIZE] = popsize;
-	for(i = 0; i < MAX_POP_SIZE; i++){
+	storage[maxPopSize] = popSize;
+	for(i = 0; i < maxPopSize; i++){
 		popSizeArrayForAverage[i] = storage[i];
 	}
 }
 
-void UpdateLast200NTimeSteps(double* last200Ntimesteps, double newNtimesteps)
+void UpdateLast200NTimeSteps(double* last200NTimeSteps, double newNTimeSteps)
 {
     double storage[200];
     int m;
     for (m = 0; m < 199; m++) {
-        storage[m] = last200Ntimesteps[m + 1];
+        storage[m] = last200NTimeSteps[m + 1];
     }
-    storage[199] = newNtimesteps;
+    storage[199] = newNTimeSteps;
     for (m = 0; m < 200; m++) {
-        last200Ntimesteps[m] = storage[m];
+    	last200NTimeSteps[m] = storage[m];
     }
 }
 
-//this function runs once a generation I toyed with using memory but Im afraid I will mess something up(8/3/2020)
-//this function updates average population size for the last generation
 void UpdateLast200GenStepsAbs(int* last200Gen, int newAveragePopSize)
 {
     int storage[200];
@@ -338,34 +335,19 @@ void DoubleSwap(long double* x, long double* y)
 }
 
 //Inefficient algorithm (guaranteed to be order n^2). Improve algorithm if using more than once per simulation.
-void DoubleBubbleSort(long double* arraytobesorted, int arraysize)
+void DoubleBubbleSort(long double* arrayToBeSorted, int arraySize)
 {
     int i, j;
-    for (i = 0; i < arraysize - 1; i++) {
-        for (j = 0; j < arraysize - i - 1; j++) {
-            if (arraytobesorted[j] > arraytobesorted[j + 1]) {
-                DoubleSwap(&arraytobesorted[j], &arraytobesorted[j + 1]);
+    for (i = 0; i < arraySize - 1; i++) {
+        for (j = 0; j < arraySize - i - 1; j++) {
+            if (arrayToBeSorted[j] > arrayToBeSorted[j + 1]) {
+                DoubleSwap(&arrayToBeSorted[j], &arrayToBeSorted[j + 1]);
             }
         }
     }
 }
 
-double CalculateVarianceInLogFitness(int popsize, long double* wholepopulationwisarray, long double sumofwis, struct individual* popArray, int* indexArray)
-{
-    int i;
-    double variancesum;
-    variancesum = 0.0;
-    long double logaverage;
-    logaverage = log(sumofwis / popsize);
-    for (i = 0; i < popsize; i++) {
-        //variancesum += (double) pow((log(wholepopulationwisarray[i]) - logaverage), 2);
-        variancesum += (double)pow((log(popArray[indexArray[i]].wis) - logaverage), 2);
-    }
-    variancesum = (variancesum / popsize);
-    return variancesum;
-}
-
-long double FindFittestWi(long double* wisarray, int popsize, struct individual* popArray, int* indexArray)
+long double FindFittestWi(int popsize, struct individual* popArray, int* indexArray)
 {
     long double fittestwi;
     int i;
@@ -375,8 +357,6 @@ long double FindFittestWi(long double* wisarray, int popsize, struct individual*
             fittestwi = popArray[indexArray[i]].wis;
         }
     }
-
-    //fprintf(veryverbosefilepointer, "\nnew fitness %lf\n", fittestwi);
 
     return fittestwi;
 }
@@ -752,7 +732,8 @@ void allocateMemoryForSizeOfGenome(int maxPopSize, int genomeSize, struct indivi
 
 //discuss with joseph
 //should a seperate fuction be created dealing with absolute fitness
-void InitializePopulation(long double* wholepopulationwistree, int populationsize, int singleIndividualGenomeLength, int totaltimesteps, long double* psumofwis, long double* pInverseSumOfWis, struct individual* popArray, int* indexArray, int* freeIndexes, int MAX_POP_SIZE) {
+void InitializePopulation(long double* wholepopulationwistree, int populationsize, int singleIndividualGenomeLength, long double* psumofwis, long double* pInverseSumOfWis, struct individual* popArray, int* indexArray, int* freeIndexes, int MAX_POP_SIZE)
+{
     int i, j, k;
 
     double haploidgenomelength = (double)((singleIndividualGenomeLength) / 2);
@@ -804,10 +785,11 @@ void InitializePopulation(long double* wholepopulationwistree, int populationsiz
         }
     }
 
-    *psumofwis = populationsize;
-    *pInverseSumOfWis = populationsize;
+    *psumofwis = *psumofwis + (long double)populationsize;
+    *pInverseSumOfWis = *pInverseSumOfWis + (long double)populationsize;
 
-    fprintf(verbosefilepointer, "InverseSum %lf \n", *pInverseSumOfWis);
+    fprintf(verbosefilepointer, "Sum %Lf \n", *psumofwis);
+    fprintf(verbosefilepointer, "InverseSum %Lf \n", *pInverseSumOfWis);
 
 }
 
@@ -828,6 +810,7 @@ int SearchTree(int leftbound, int rightbound, long double targetvalue, long doub
     partialsumatmiddle = Fen_sum(Fenwicktree, middle);
     partialsumatmiddleminusone = Fen_sum(Fenwicktree, middle - 1);
 
+    /*
     if(eventNumber > 1270000){
 		fprintf(veryverbosefilepointer, "leftbound %d\n", leftbound);
 		fprintf(veryverbosefilepointer, "rightbound %d\n", rightbound);
@@ -837,6 +820,7 @@ int SearchTree(int leftbound, int rightbound, long double targetvalue, long doub
 		fprintf(veryverbosefilepointer, "target value %llf\n", targetvalue);
 		fflush(veryverbosefilepointer);
     }
+	*/
 
     if (partialsumatmiddle < targetvalue) {
         if ((middle + 1) == rightbound) {
@@ -908,8 +892,11 @@ int ChooseVictimWithTree(long double* wholepopulationwistree, int popsize, long 
 
     //the random death is causing a strange number
     newVictim = (SearchTree(leftbound, rightbound, randomnumberofdeath, wholepopulationwistree, eventNumber));//fixed possible error
-    fprintf(veryverbosefilepointer,"\n error message passed\n", randomnumberofdeath);
-    fflush(veryverbosefilepointer);
+
+    if (VERYVERBOSE == 1) {
+    	fprintf(veryverbosefilepointer,"\n error message passed\n", randomnumberofdeath);
+    	fflush(veryverbosefilepointer);
+    }
 
     if (VERYVERBOSE == 1) {
         fprintf(veryverbosefilepointer, "\nChoosen Victim %d\n", newVictim);
@@ -1143,8 +1130,8 @@ void performBirth(double* parent1gamete, double* parent2gamete, int* pCurrentPop
     }
 
     //edit sums of fitness and death rate
-    *pSumOfWis += newWi;
-    *pInverseSumOfWis += (long double)newInverseWi;
+    *pSumOfWis = *pSumOfWis + newWi;
+    *pInverseSumOfWis = *pInverseSumOfWis + newInverseWi;
     //edit population size to reflect a birth
     *pCurrentPopsize = *pCurrentPopsize + 1;
 
@@ -1180,7 +1167,7 @@ void performBirth(double* parent1gamete, double* parent2gamete, int* pCurrentPop
 
 }
 
-void performDeath(int* currentpopsize, int currentvictim, long double* sumofwis, long double* wholepopulationwistree, long double* pInverseSumOfWis, struct individual* popArray, int* arrayOfIndexes, int* arrayOfFreeIndexes, int MAX_POP_SIZE) {
+void performDeath(int* pCurrentPopsize, int currentvictim, long double* sumofwis, long double* wholepopulationwistree, long double* pInverseSumOfWis, struct individual* popArray, int* arrayOfIndexes, int* arrayOfFreeIndexes, int MAX_POP_SIZE) {
 
 	const int ZERO = 0;
 	const int NEGATIVE_ONE = -1;
@@ -1217,17 +1204,17 @@ void performDeath(int* currentpopsize, int currentvictim, long double* sumofwis,
     }
 
     //the open index will be at the current popsize
-    openIndex = *currentpopsize;
+    openIndex = *pCurrentPopsize;
 
-    arrayPositionFlip(*currentpopsize, arrayOfIndexes, currentvictim);
+    arrayPositionFlip(*pCurrentPopsize, arrayOfIndexes, currentvictim);
 
     if (PERFORMDEATHMARKER == 1) {
         fprintf(veryverbosefilepointer, "arrays filiped. \n");
         fflush(veryverbosefilepointer);
     }
 
-    *pInverseSumOfWis -= popArray[arrayOfIndexes[openIndex]].deathRate;
-    *sumofwis -= popArray[arrayOfIndexes[openIndex]].wis;
+    *pInverseSumOfWis = *pInverseSumOfWis - popArray[arrayOfIndexes[openIndex]].deathRate;
+    *sumofwis = *sumofwis - popArray[arrayOfIndexes[openIndex]].wis;
 
     negativeInverseWi = (NEGATIVE_ONE) * (popArray[arrayOfIndexes[openIndex]].wis);
 
@@ -1253,7 +1240,7 @@ void performDeath(int* currentpopsize, int currentvictim, long double* sumofwis,
         fflush(veryverbosefilepointer);
     }
 
-    *currentpopsize = *currentpopsize - 1;
+    *pCurrentPopsize = *pCurrentPopsize - 1;
 
     if (PERFORMDEATHMARKER == 1) {
         fprintf(veryverbosefilepointer, "popsize changes. \n");
@@ -1331,7 +1318,7 @@ void ProduceMutatedRecombinedGamete(int chromosomesize, int numberofchromosomes,
 
 }
 
-void PerformOneTimeStep(int* pPopSize, int totaltimesteps, int currenttimestep, long double* wholepopulationwistree, double* wholepopulationgenomes, long double* psumofwis, long double* pInverseSumOfWis, int chromosomesize, int numberofchromosomes, int totalindividualgenomelength, double deleteriousmutationrate, double beneficialmutationrate, double Sb, char* beneficialdistribution, double* parent1gamete, double* parent2gamete, gsl_rng* randomnumbergeneratorforgamma, int birthBool, struct individual* popArray, int* freeIndexes, int* arrayOfIndexes, int eventNumber, int maxPopSize)
+void PerformOneTimeStep(int* pPopSize, int currenttimestep, long double* wholepopulationwistree, double* wholepopulationgenomes, long double* psumofwis, long double* pInverseSumOfWis, int chromosomesize, int numberofchromosomes, int totalindividualgenomelength, double deleteriousmutationrate, double beneficialmutationrate, double Sb, char* beneficialdistribution, double* parent1gamete, double* parent2gamete, gsl_rng* randomnumbergeneratorforgamma, int birthBool, struct individual* popArray, int* freeIndexes, int* arrayOfIndexes, int eventNumber, int maxPopSize)
 {
 
     if (PERFORMONETIMESTEPMARKERS == 1) {
@@ -1344,7 +1331,6 @@ void PerformOneTimeStep(int* pPopSize, int totaltimesteps, int currenttimestep, 
 
     const int BIRTH_OCCURS = 1;
     const int DEATH_OCCURS = 0;
-    const int MAX_POP_SIZE = 10000;//needs to be changed to inherit
 
     if (birthBool == BIRTH_OCCURS) {
 
@@ -1374,12 +1360,11 @@ void PerformOneTimeStep(int* pPopSize, int totaltimesteps, int currenttimestep, 
             fflush(veryverbosefilepointer);
         }
 
-    	if(popSize < 10000){
-        	performBirth(parent1gamete, parent2gamete, pPopSize, currentvictim, psumofwis, totalindividualgenomelength, wholepopulationwistree, pInverseSumOfWis, popArray, freeIndexes, arrayOfIndexes, maxPopSize, eventNumber);
-    	}
-    	else{
+        performBirth(parent1gamete, parent2gamete, pPopSize, currentvictim, psumofwis, totalindividualgenomelength, wholepopulationwistree, pInverseSumOfWis, popArray, freeIndexes, arrayOfIndexes, maxPopSize, eventNumber);
 
-    	}
+        fprintf(verbosefilepointer, "Sum of wi %Lf \n", *psumofwis);
+        fprintf(verbosefilepointer, "Sum of inverse wi %Lf \n", *pInverseSumOfWis);
+        fflush(verbosefilepointer);
 
     }
     else if (birthBool == DEATH_OCCURS) {
@@ -1391,7 +1376,10 @@ void PerformOneTimeStep(int* pPopSize, int totaltimesteps, int currenttimestep, 
             fflush(veryverbosefilepointer);
         }
 
-        performDeath(pPopSize, currentvictim, psumofwis, wholepopulationwistree, pInverseSumOfWis, popArray, arrayOfIndexes, arrayOfIndexes, MAX_POP_SIZE);
+        performDeath(pPopSize, currentvictim, psumofwis, wholepopulationwistree, pInverseSumOfWis, popArray, arrayOfIndexes, arrayOfIndexes, maxPopSize);
+
+    }
+    else{
 
     }
     if (PERFORMONETIMESTEPMARKERS == 1) {
@@ -1449,7 +1437,6 @@ double RunSimulation(char* Nxtimestepsname, char* popsizename, char* delmutraten
     int birthBool;
     int popsize;
     int endofburninphase;
-    int totaltimesteps = timeSteps * maxPopSize;
     int currenttimestep = 0;
     int isburninphaseover = 0;
     int didpopulationcrash = 0;
@@ -1457,7 +1444,6 @@ double RunSimulation(char* Nxtimestepsname, char* popsizename, char* delmutraten
     int endofsimulation = timeSteps - 1;
     int timeStepsAfterBurnin = 0;
     int EventsPreformed = 0;
-    int generations = 0;
     int avgPopsizeForOneRun = 0;
 
     double numberOfTimeStepsBetweenEvents;
@@ -1472,8 +1458,8 @@ double RunSimulation(char* Nxtimestepsname, char* popsizename, char* delmutraten
     double avgDeathRate;
     double arbitrarynumber = 1;
 
-    long double sumofwis;
-    long double inverseSumOfWis;
+    long double sumofwis = 0;
+    long double inverseSumOfWis = 0;
     long double currentfittestindividualswi;
 
 
@@ -1531,7 +1517,10 @@ double RunSimulation(char* Nxtimestepsname, char* popsizename, char* delmutraten
     fprintf(veryverbosefilepointer, "Memory allocated for genomes. \n");
     fflush(veryverbosefilepointer);
 
-    InitializePopulation(wholepopulationwistree, initialPopSize, totalindividualgenomelength, totaltimesteps, psumofwis, pInverseSumOfWis, popArray, arrayOfIndexes, arrayOfFreeIndexes, maxPopSize);
+    InitializePopulation(wholepopulationwistree, initialPopSize, totalindividualgenomelength, psumofwis, pInverseSumOfWis, popArray, arrayOfIndexes, arrayOfFreeIndexes, maxPopSize);
+
+    //I dont understand this comment is what allows the variables psumofwis and pinversesumofwis to update no know logic dicates this and I dont understand life anymore
+    //fprintf(verbosefilepointer, "InverseSum %Lf \n", inverseSumOfWis);
 
     fprintf(veryverbosefilepointer, "Population initialized.\n");
     fflush(veryverbosefilepointer);
@@ -1547,10 +1536,6 @@ double RunSimulation(char* Nxtimestepsname, char* popsizename, char* delmutraten
         fprintf(veryverbosefilepointer, "Enters simulation run \n");
         fflush(veryverbosefilepointer);
     }
-
-    fprintf(verbosefilepointer, "Run number %d\n", i);
-    fflush(verbosefilepointer);
-
 
     while (currenttimestep < timeSteps) {
 
@@ -1582,18 +1567,20 @@ double RunSimulation(char* Nxtimestepsname, char* popsizename, char* delmutraten
             fflush(veryverbosefilepointer);
         }
 
-        fprintf(verbosefilepointer, "Run number %d\n", i);
+        fprintf(verbosefilepointer, "Run number %d\n", EventsPreformed);
         fflush(verbosefilepointer);
 
-		PerformOneTimeStep(pPopSize, totaltimesteps, currenttimestep, wholepopulationwistree, wholepopulationgenomes, psumofwis, pInverseSumOfWis, chromosomesize, numberofchromosomes, totalindividualgenomelength, deleteriousmutationrate, beneficialmutationrate, Sb, beneficialdistribution, parent1gamete, parent2gamete, randomnumbergeneratorforgamma, birthBool, popArray, arrayOfFreeIndexes, arrayOfIndexes, EventsPreformed, maxPopSize);
+		PerformOneTimeStep(pPopSize, currenttimestep, wholepopulationwistree, wholepopulationgenomes, psumofwis, pInverseSumOfWis, chromosomesize, numberofchromosomes, totalindividualgenomelength, deleteriousmutationrate, beneficialmutationrate, Sb, beneficialdistribution, parent1gamete, parent2gamete, randomnumbergeneratorforgamma, birthBool, popArray, arrayOfFreeIndexes, arrayOfIndexes, EventsPreformed, maxPopSize);
 
         if (RUNSIMULATIONMARKERS == 1) {
             fprintf(veryverbosefilepointer, "Time step performed. \n");
             fflush(veryverbosefilepointer);
         }
 
-        fprintf(verbosefilepointer, "sum of death rates, %lf", inverseSumOfWis);
-        fflush(verbosefilepointer);
+        if (RUNSIMULATIONMARKERS == 1) {
+        	fprintf(verbosefilepointer, "sum of death rates, %lf", inverseSumOfWis);
+        	fflush(verbosefilepointer);
+        }
 
 		avgDeathRate = inverseSumOfWis/popsize;
 
@@ -1653,13 +1640,16 @@ double RunSimulation(char* Nxtimestepsname, char* popsizename, char* delmutraten
         //These lines ensure that the magnitude of fitness hasn't declined by too much.
         //At extremely small fitness values, floating-point math becomes imprecise.
         //These lines end the simulation if fitness declines below 10^-10, which should represent a completely degraded population.
-        currentfittestindividualswi = FindFittestWi(wholepopulationwisarray, popsize, popArray, arrayOfIndexes);
+        currentfittestindividualswi = FindFittestWi(popsize, popArray, arrayOfIndexes);
         if (currentfittestindividualswi < pow(10.0, -10.0)) {
             fprintf(miscfilepointer, "\nFitness declined to less than 10^-10 during generation %d.", EventsPreformed + 1);
             fprintf(summarydatafilepointer, "Fitness declined to catastrophic levels in generation %d.\n", EventsPreformed + 1);
             endofsimulation = EventsPreformed;
             EventsPreformed = timeSteps;
             didpopulationcrash = EventsPreformed;
+
+            break;
+
         }
 
         if (RUNSIMULATIONMARKERS == 1) {
@@ -1676,7 +1666,7 @@ double RunSimulation(char* Nxtimestepsname, char* popsizename, char* delmutraten
          * 						Only for Absolute Populations
          */
 
-        storePopsizeForGenerations(popSizeArrayForAverage, popsize);
+        storePopsizeForGenerations(popSizeArrayForAverage, popsize, maxPopSize);
 
         if (RUNSIMULATIONMARKERS == 1) {
             fprintf(veryverbosefilepointer, "Store popsize for generations completed \n");
