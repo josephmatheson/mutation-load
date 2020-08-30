@@ -24,6 +24,7 @@
 #include<gsl/gsl_fit.h>
 #include<err.h>
 
+#define QUICK_DEATH 0
 #define PERFORMBIRTHMARKER 0
 #define PERFORMONETIMESTEPMARKERS 0
 #define PERFORMDEATHMARKER 0
@@ -704,7 +705,7 @@ int monteCarloStep(int popSize, double sumWi, double* pTimeElapsed, double sumOf
 
     birthRate = rateOfBirthsCalc(popSize, b, MAX_POP_SIZE);
 
-    mean = popSize;
+    mean = ((1.0)/(deathRate + birthRate));
     time = ExponentialDerivateOfUnitMeanOne(randSeed);
     time = (time) * (mean);
 
@@ -737,8 +738,6 @@ void InitializePopulation(long double* wholepopulationwistree, int populationsiz
     int i, j, k;
 
     double haploidgenomelength = (double)((singleIndividualGenomeLength) / 2);
-
-    fprintf(verbosefilepointer, "popsize %d \n", populationsize);
 
     for (i = 0; i < populationsize; i++) {
 
@@ -787,9 +786,6 @@ void InitializePopulation(long double* wholepopulationwistree, int populationsiz
 
     *psumofwis = *psumofwis + (long double)populationsize;
     *pInverseSumOfWis = *pInverseSumOfWis + (long double)populationsize;
-
-    fprintf(verbosefilepointer, "Sum %Lf \n", *psumofwis);
-    fprintf(verbosefilepointer, "InverseSum %Lf \n", *pInverseSumOfWis);
 
 }
 
@@ -858,8 +854,6 @@ int ChooseParent(int populationsize)
 //returns number of vicim does not select from array
 int ChooseVictimWithTree(long double* wholepopulationwistree, int popsize, long double sumofwis, long double inverseSumOfWis, int eventNumber)//using pinversesum intesting and is currently unchanged 11/18/2019
 {
-    fprintf(veryverbosefilepointer,"\npopsize %d\n", popsize);
-    fflush(veryverbosefilepointer);
 
     long double randomnumberofdeath;
     int newVictim = 0;
@@ -1129,10 +1123,18 @@ void performBirth(double* parent1gamete, double* parent2gamete, int* pCurrentPop
         fflush(veryverbosefilepointer);
     }
 
-    //edit sums of fitness and death rate
-    *pSumOfWis = *pSumOfWis + newWi;
-    *pInverseSumOfWis = *pInverseSumOfWis + newInverseWi;
-    //edit population size to reflect a birth
+    //the following statement is to quickly kill apopulation for a very short run
+
+    if(QUICK_DEATH == 1){
+    	*pSumOfWis = *pSumOfWis + newWi;
+    	*pInverseSumOfWis += *pInverseSumOfWis + newInverseWi;
+    }
+    else{
+    	*pSumOfWis = *pSumOfWis + newWi;
+    	*pInverseSumOfWis = *pInverseSumOfWis + newInverseWi;
+    }
+
+
     *pCurrentPopsize = *pCurrentPopsize + 1;
 
     if (PERFORMBIRTHMARKER == 1) {
@@ -1362,10 +1364,6 @@ void PerformOneTimeStep(int* pPopSize, int currenttimestep, long double* wholepo
 
         performBirth(parent1gamete, parent2gamete, pPopSize, currentvictim, psumofwis, totalindividualgenomelength, wholepopulationwistree, pInverseSumOfWis, popArray, freeIndexes, arrayOfIndexes, maxPopSize, eventNumber);
 
-        fprintf(verbosefilepointer, "Sum of wi %Lf \n", *psumofwis);
-        fprintf(verbosefilepointer, "Sum of inverse wi %Lf \n", *pInverseSumOfWis);
-        fflush(verbosefilepointer);
-
     }
     else if (birthBool == DEATH_OCCURS) {
 
@@ -1391,6 +1389,7 @@ void PerformOneTimeStep(int* pPopSize, int currenttimestep, long double* wholepo
 
 double RunSimulation(char* Nxtimestepsname, char* popsizename, char* delmutratename, char* chromsizename, char* chromnumname, char* mubname, char* Sbname, char* typeofrun, int timeSteps, int initialPopSize, int maxPopSize, int chromosomesize, int numberofchromosomes, double deleteriousmutationrate, double beneficialmutationrate, double Sb, char* beneficialdistribution, gsl_rng* randomnumbergeneratorforgamma, FILE* veryverbosefilepointer, FILE* verbosefilepointer, FILE* miscfilepointer)
 {
+
     int i, j, k, w;
 
     char* rawdatafilename = (char*)malloc(sizeof(char) * 200);//editied slightly if everythig blows up definitly this (11/25/2019)
@@ -1437,7 +1436,6 @@ double RunSimulation(char* Nxtimestepsname, char* popsizename, char* delmutraten
     int birthBool;
     int popsize;
     int endofburninphase;
-    int currenttimestep = 0;
     int isburninphaseover = 0;
     int didpopulationcrash = 0;
     int endofdelay = timeSteps - 1;
@@ -1446,6 +1444,7 @@ double RunSimulation(char* Nxtimestepsname, char* popsizename, char* delmutraten
     int EventsPreformed = 0;
     int avgPopsizeForOneRun = 0;
 
+    double currenttimestep = 0;
     double numberOfTimeStepsBetweenEvents;
     double varianceOfPopulationForLastTenThousandTimeSteps;
     double c0, cov00, cov01, cov11, sumsq;
@@ -1455,9 +1454,10 @@ double RunSimulation(char* Nxtimestepsname, char* popsizename, char* delmutraten
     double variancesum;
     double variancePop;
     double averagePopsize;
-    double avgDeathRate;
     double arbitrarynumber = 1;
+    double doubleTimeStep = timeSteps * 1.0;
 
+    long double avgDeathRate = 0;
     long double sumofwis = 0;
     long double inverseSumOfWis = 0;
     long double currentfittestindividualswi;
@@ -1468,6 +1468,7 @@ double RunSimulation(char* Nxtimestepsname, char* popsizename, char* delmutraten
     int* arrayOfFreeIndexes;
     int* pPopSize;
 
+    double* pCurrentTimeStep;
     double* popSizeArrayForAverage;
     double* wholepopulationgenomes;
     double* logaveragefitnesseachNtimesteps;
@@ -1488,6 +1489,7 @@ double RunSimulation(char* Nxtimestepsname, char* popsizename, char* delmutraten
     totalindividualgenomelength = numberofchromosomes * 2 * chromosomesize;
     popsize = initialPopSize;
 
+    pCurrentTimeStep = &currenttimestep;
     pPopSize = &popsize;
     psumofwis = &sumofwis;
     pInverseSumOfWis = &inverseSumOfWis;
@@ -1537,7 +1539,7 @@ double RunSimulation(char* Nxtimestepsname, char* popsizename, char* delmutraten
         fflush(veryverbosefilepointer);
     }
 
-    while (currenttimestep < timeSteps) {
+    while (currenttimestep <= doubleTimeStep) {
 
     	//checkDoubles(arrayOfIndexes, arrayOfFreeIndexes, MAX_POP_SIZE, popsize);
 
@@ -1553,22 +1555,17 @@ double RunSimulation(char* Nxtimestepsname, char* popsizename, char* delmutraten
 
         }
 
-        birthBool = monteCarloStep(popsize, sumofwis, pNumberOfTimeStepsBetweenEvents, inverseSumOfWis, popArray, maxPopSize);
+        birthBool = monteCarloStep(popsize, sumofwis, pCurrentTimeStep, inverseSumOfWis, popArray, maxPopSize);
 
         if (RUNSIMULATIONMARKERS == 1) {
             fprintf(veryverbosefilepointer, "Birth or Death chosen. \n");
             fflush(veryverbosefilepointer);
         }
 
-        currenttimestep += numberOfTimeStepsBetweenEvents;
-
         if (RUNSIMULATIONMARKERS == 1) {
             fprintf(veryverbosefilepointer, "Time step updated. \n");
             fflush(veryverbosefilepointer);
         }
-
-        fprintf(verbosefilepointer, "Run number %d\n", EventsPreformed);
-        fflush(verbosefilepointer);
 
 		PerformOneTimeStep(pPopSize, currenttimestep, wholepopulationwistree, wholepopulationgenomes, psumofwis, pInverseSumOfWis, chromosomesize, numberofchromosomes, totalindividualgenomelength, deleteriousmutationrate, beneficialmutationrate, Sb, beneficialdistribution, parent1gamete, parent2gamete, randomnumbergeneratorforgamma, birthBool, popArray, arrayOfFreeIndexes, arrayOfIndexes, EventsPreformed, maxPopSize);
 
@@ -1584,15 +1581,15 @@ double RunSimulation(char* Nxtimestepsname, char* popsizename, char* delmutraten
 
 		avgDeathRate = inverseSumOfWis/popsize;
 
-        if (RUNSIMULATIONMARKERS == 1) {
-            fprintf(veryverbosefilepointer, "Average death rate performed \n");
-            fflush(veryverbosefilepointer);
-        }
+		if((EventsPreformed % 200) == 0){
 
-        if((EventsPreformed % 200) == 0){
-        	fprintf(rawdatafilepointer, "%lf,%d,%lf\n", currenttimestep, popsize, avgDeathRate);
-        	fflush(rawdatafilepointer);
-        }
+			fprintf(rawdatafilepointer, "%lf ", currenttimestep);
+			fprintf(rawdatafilepointer, "%d ", popsize);
+			fprintf(rawdatafilepointer, "%Lf \n", avgDeathRate);
+			fflush(rawdatafilepointer);
+
+		}
+
         //This is to produce a histogram of the wis of the entire population from a single generation.
         //It's terrible and completely non-modular, but I just can't bring myself to add in two more user-input arguments.
         if (strcmp(typeofrun, "single") == 0) {
@@ -1606,7 +1603,7 @@ double RunSimulation(char* Nxtimestepsname, char* popsizename, char* delmutraten
                     fprintf(summarydatafilepointer, "Individual, Wi\n");
                     for (k = 0; k < popsize; k++) {
 
-                        fprintf(summarydatafilepointer, "%d,%Lf\n", k + 1, popArray[arrayOfIndexes[k]].wis);
+                        fprintf(summarydatafilepointer, "%d,%lf\n", k + 1, popArray[arrayOfIndexes[k]].wis);
                     }
                 }
             }
@@ -1657,14 +1654,6 @@ double RunSimulation(char* Nxtimestepsname, char* popsizename, char* delmutraten
             fflush(veryverbosefilepointer);
         }
         EventsPreformed++;
-
-        /*This currently counts the number of generations. This should currently not be 10000
-         * as a population to complete takes at least anywhere from 2-10000 runs but for the case
-         * of the burn in phase where this matters the population for the most part will be at
-         * 10000 individuals. This is not a good solution as the moment an actual population
-         * begins recording data the number becomes arbitary.
-         * 						Only for Absolute Populations
-         */
 
         storePopsizeForGenerations(popSizeArrayForAverage, popsize, maxPopSize);
 
