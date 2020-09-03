@@ -633,6 +633,8 @@ double rateOfBirthsCalc(int populationSize, double b, int MAX_POP_SIZE) {
 
     double birthRate;
 
+    //print out birth rate
+
     birthRate = (b) * (populationSize) * (1 - (populationSize / MAX_POP_SIZE));
 
     return  birthRate;
@@ -1583,9 +1585,9 @@ double RunSimulation(char* Nxtimestepsname, char* popsizename, char* delmutraten
 
 		if((EventsPreformed % 200) == 0){
 
-			fprintf(rawdatafilepointer, "%lf ", currenttimestep);
-			fprintf(rawdatafilepointer, "%d ", popsize);
-			fprintf(rawdatafilepointer, "%Lf \n", avgDeathRate);
+			fprintf(rawdatafilepointer, "%lf,", currenttimestep);
+			fprintf(rawdatafilepointer, "%d,", popsize);
+			fprintf(rawdatafilepointer, "%Lf\n", avgDeathRate);
 			fflush(rawdatafilepointer);
 
 		}
@@ -1681,7 +1683,7 @@ double RunSimulation(char* Nxtimestepsname, char* popsizename, char* delmutraten
                 //because of setting pre-simulation generations to zeroes
                 //I just won't start looking for the end of the burn-in phase until 200 generations
                 //This would be a mild problem if a simulation should end in 200 generations, but that shouldn't ever happen with the DFE I'm using.
-                if (i > 199) {
+                if ((EventsPreformed/maxPopSize) > 200) {
                     slopeofvariance = 0.0;
                     gsl_fit_linear(literallyjustlast200Ntimesteps, step, popSizeArrayForAverage, step, 200, &c0, &slopeofvariance, &cov00, &cov01, &cov11, &sumsq);
                     if (slopeofvariance < arbitrarynumber) {
