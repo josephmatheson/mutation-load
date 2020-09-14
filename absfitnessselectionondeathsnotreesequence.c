@@ -28,7 +28,7 @@
 #define PERFORMBIRTHMARKER 0
 #define PERFORMONETIMESTEPMARKERS 0
 #define PERFORMDEATHMARKER 0
-#define VERBOSE 0
+#define VERBOSE 1
 #define VERYVERBOSE 0
 #define RUNSIMULATIONMARKERS 0
 #define MISCELLANEOUS 1
@@ -87,9 +87,9 @@ int BracketZeroForSb(double*, double*, char*, char*, char*, char*, char*, char*,
 double BisectionMethodToFindSbWithZeroSlope(double*, double*, char*, char*, char*, char*, char*, char*, char*, int, int, int, int, int, double, double, double, char*, gsl_rng*, FILE*, FILE*, FILE*);
 double ExponentialDerivateOfUnitMeanOne(float idum);
 double rateOfDeathsCalc(double, double);
-double rateOfBirthsCalc(int, double, int);
-int discoverEvent(double, double);
-int monteCarloStep(int, double, double*, double, struct individual*, int);
+double rateOfBirthsCalc(int, double, int, double);
+int discoverEvent(double, double, double);
+int monteCarloStep(int, double, double*, double, struct individual*, int, double);
 double averageWiOfStructs(int*, int*, int);
 void performDeath(int*, int, long double*, long double*, long double*, struct individual*, int*, int*, int);
 void performBirth(double*, double*, int*, int, long double*, int, long double*, long double*, struct individual*, int*, int*, const int, int);
@@ -629,19 +629,25 @@ double rateOfDeathsCalc(double sumOfFitness, double D0) {
 
 }
 
-double rateOfBirthsCalc(int populationSize, double b, int MAX_POP_SIZE) {
+double rateOfBirthsCalc(int populationSize, double b, int MAX_POP_SIZE, double currentTimeStep) {
 
     double birthRate;
+    double popSizeConvertedToDouble = populationSize * 1.0;
 
-    //print out birth rate
+    if ((VERBOSE == 1) && (currentTimeStep > 1.0)) {
+    	fprintf(verbosefilepointer, "Max pop size is currently, %d \n", MAX_POP_SIZE);
+        fprintf(verbosefilepointer, "Popsize is currently, %d \n", populationSize);
+        fprintf(verbosefilepointer, "b is currently, %lf \n", b);
+        fflush(verbosefilepointer);
+    }
 
-    birthRate = (b) * (populationSize) * (1 - (populationSize / MAX_POP_SIZE));
+    birthRate = (b) * (popSizeConvertedToDouble) * (1 - (popSizeConvertedToDouble / MAX_POP_SIZE));
 
     return  birthRate;
 
 }
 
-int discoverEvent(double deathRate, double birthRate) {
+int discoverEvent(double deathRate, double birthRate, double currentTimeStep) {
 
     int boolBirth;
 
@@ -654,13 +660,10 @@ int discoverEvent(double deathRate, double birthRate) {
     combinedBirthDeathRate = deathRate + birthRate;
     cutOffPoint = deathRate/combinedBirthDeathRate;
 
-    if (VERYVERBOSE == 1) {
-        fprintf(veryverbosefilepointer, "Random number %lf\n", randomNumber);
-        fflush(veryverbosefilepointer);
-    }
-    if (VERYVERBOSE == 1) {
-        fprintf(veryverbosefilepointer, "CutOff %lf\n", cutOffPoint);
-        fflush(veryverbosefilepointer);
+    if ((VERBOSE == 1) && (currentTimeStep > 1.0)) {
+        fprintf(verbosefilepointer, "Combined Rate is currently, %lf \n", combinedBirthDeathRate);
+        fprintf(verbosefilepointer, "cutOffPoint is currently, %lf \n\n", cutOffPoint);
+        fflush(verbosefilepointer);
     }
 
     if (randomNumber > cutOffPoint) {
@@ -678,14 +681,7 @@ int discoverEvent(double deathRate, double birthRate) {
 }
 
 //returns output of either birth or death
-int monteCarloStep(int popSize, double sumWi, double* pTimeElapsed, double sumOfDeathRates, struct individual* popArray, int MAX_POP_SIZE) {
-
-	/*
-    if (VERYVERBOSE == 1) {
-        fprintf(veryverbosefilepointer, "Enters into monte carlo step\n");
-        fflush(veryverbosefilepointer);
-    }
-    */
+int monteCarloStep(int popSize, double sumWi, double* pTimeElapsed, double sumOfDeathRates, struct individual* popArray, int MAX_POP_SIZE, double currentTimeStep) {
 
     int boolVar;
     int randSeed = rand();
@@ -705,7 +701,13 @@ int monteCarloStep(int popSize, double sumWi, double* pTimeElapsed, double sumOf
 
     deathRate = sumOfDeathRates;
 
-    birthRate = rateOfBirthsCalc(popSize, b, MAX_POP_SIZE);
+    birthRate = rateOfBirthsCalc(popSize, b, MAX_POP_SIZE, currentTimeStep);
+
+    if ((VERBOSE == 1) && (currentTimeStep > 1.0)) {
+        fprintf(verbosefilepointer, "Birth Rate is currently, %lf \n", birthRate);
+        fprintf(verbosefilepointer, "Death Rate is currently, %lf \n", deathRate);
+        fflush(verbosefilepointer);
+    }
 
     mean = ((1.0)/(deathRate + birthRate));
     time = ExponentialDerivateOfUnitMeanOne(randSeed);
@@ -713,7 +715,7 @@ int monteCarloStep(int popSize, double sumWi, double* pTimeElapsed, double sumOf
 
     *pTimeElapsed = time + *pTimeElapsed;
 
-    boolVar = discoverEvent(deathRate, birthRate);
+    boolVar = discoverEvent(deathRate, birthRate, currentTimeStep);
 
     return boolVar;
 
@@ -1082,9 +1084,9 @@ void performBirth(double* parent1gamete, double* parent2gamete, int* pCurrentPop
     	}
     	else if( (freeIndex == 0) && (i = (sizeOfFreeIndexes - 1)) ){
     		//error detailing that the for loop reached conlusion picked data but this data was for the zero index
-        	if(VERBOSE == 1){
+        	/*if(VERBOSE == 1){
         		fprintf(verbosefilepointer, "Perform birth takes from final index that is zero");
-        	}
+        	}*/
     	}
     	else{
 
@@ -1125,7 +1127,7 @@ void performBirth(double* parent1gamete, double* parent2gamete, int* pCurrentPop
         fflush(veryverbosefilepointer);
     }
 
-    //the following statement is to quickly kill apopulation for a very short run
+    //the following statement is to quickly kill a population for a very short run
 
     if(QUICK_DEATH == 1){
     	*pSumOfWis = *pSumOfWis + newWi;
@@ -1194,7 +1196,7 @@ void performDeath(int* pCurrentPopsize, int currentvictim, long double* sumofwis
     	else if( newFreeIndex != 0 ){
     		//error detailing that the for loop reached conlusion picked data but this data was for the zero index
         	if(VERBOSE == 1){
-        		fprintf(verbosefilepointer, "Perform death calls index of already dead population");
+        		//fprintf(verbosefilepointer, "Perform death calls index of already dead population");
         	}
     	}
     	else{
@@ -1557,7 +1559,7 @@ double RunSimulation(char* Nxtimestepsname, char* popsizename, char* delmutraten
 
         }
 
-        birthBool = monteCarloStep(popsize, sumofwis, pCurrentTimeStep, inverseSumOfWis, popArray, maxPopSize);
+        birthBool = monteCarloStep(popsize, sumofwis, pCurrentTimeStep, inverseSumOfWis, popArray, maxPopSize, currenttimestep);
 
         if (RUNSIMULATIONMARKERS == 1) {
             fprintf(veryverbosefilepointer, "Birth or Death chosen. \n");
@@ -1614,12 +1616,6 @@ double RunSimulation(char* Nxtimestepsname, char* popsizename, char* delmutraten
         //If the burn-in phase has been called, wait 500 generations to start recording fitnesses.
         //This is to be sure that even when the beneficial rates/sizes are large, the only generations recorded will be from the uniformly sloping part of the simulation.
         //The average fitness from any generation after this delay period is recorded in the array of average fitnesses.
-
-        if(VERBOSE == 1){
-        	fprintf(verbosefilepointer, "Sum of Fitness at time %d is %lf\n", EventsPreformed, *psumofwis);
-        	fprintf(verbosefilepointer, "Popsize at time %d is %d\n", EventsPreformed, popsize);
-        	fflush(verbosefilepointer);
-        }
 
         if (i > endofdelay) {
             logaveragefitnesseachNtimesteps[timeStepsAfterBurnin] = log((double)*psumofwis / (double)popsize);//This refers to a completed time step not the time steps relative to the algorithm.
