@@ -891,6 +891,7 @@ int ChooseVictimWithTree(long double* wholepopulationwistree, int popsize, long 
     //the random death is causing a strange number
     newVictim = (SearchTree(leftbound, rightbound, randomnumberofdeath, wholepopulationwistree, eventNumber));//fixed possible error
 
+    /*
     if (VERYVERBOSE == 1) {
     	fprintf(veryverbosefilepointer,"\n error message passed\n", randomnumberofdeath);
     	fflush(veryverbosefilepointer);
@@ -900,6 +901,7 @@ int ChooseVictimWithTree(long double* wholepopulationwistree, int popsize, long 
         fprintf(veryverbosefilepointer, "\nChoosen Victim %d\n", newVictim);
         fflush(veryverbosefilepointer);
     }
+	*/
 
     return newVictim;
 }
@@ -1450,6 +1452,7 @@ double RunSimulation(char* Nxtimestepsname, char* popsizename, char* delmutraten
     int timeStepsAfterBurnin = 0;
     int EventsPreformed = 0;
     int avgPopsizeForOneRun = 0;
+    int switchForChart = 0;
 
     double currenttimestep = 0;
     double numberOfTimeStepsBetweenEvents;
@@ -1600,7 +1603,7 @@ double RunSimulation(char* Nxtimestepsname, char* popsizename, char* delmutraten
         //This is to produce a histogram of the wis of the entire population from a single generation.
         //It's terrible and completely non-modular, but I just can't bring myself to add in two more user-input arguments.
         if (strcmp(typeofrun, "single") == 0) {
-            if (EventsPreformed == 1999) {
+            if ((currenttimestep > 2060) && (switchForChart == 0)) {
 
                 if (INDIVIDUALWIDATA == 1) {
                     if (VERYVERBOSE == 1) {
@@ -1610,10 +1613,15 @@ double RunSimulation(char* Nxtimestepsname, char* popsizename, char* delmutraten
                     fprintf(summarydatafilepointer, "Individual, Wi\n");
                     for (k = 0; k < popsize; k++) {
 
-                        fprintf(summarydatafilepointer, "%d,%lf\n", k + 1, popArray[arrayOfIndexes[k]].wis);
+                    	fprintf(veryverbosefilepointer, "Just before individual wi data lines.\n");
+
+                        fprintf(summarydatafilepointer, "%d,%lf\n", k + 1, popArray[arrayOfIndexes[k]].deathRate);
                     }
                 }
             }
+
+            switchForChart = 1;
+
         }
 
         //If the burn-in phase has been called, wait 500 generations to start recording fitnesses.
