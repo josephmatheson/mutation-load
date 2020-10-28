@@ -159,6 +159,7 @@ void main(int argc, char* argv[]) {
 
     int randomnumberseed;
     randomnumberseed = atoi(argv[11]);
+    randomnumberseed = 200;
 
     pcg32_srandom(randomnumberseed, randomnumberseed); // seeds the random number generator.//set to one (6/16/2020)
     //pcg32_srandom(800, 800);
@@ -745,9 +746,7 @@ void InitializePopulation(long double* wholepopulationwistree, int populationsiz
 
     for (i = 0; i < populationsize; i++) {
 
-    	indexArray[i] = i;
-
-    	j = indexArray[i];
+    	j = i;
 
         popArray[j].wis = 1.0;
 
@@ -768,14 +767,18 @@ void InitializePopulation(long double* wholepopulationwistree, int populationsiz
 
     }
 
-    i++;
-
+    i = 0;
 
     while (i < MAX_POP_SIZE) {
 
-        k = 0;
-
-        freeIndexes[k] = i;
+        if(i <= populationsize){
+        	freeIndexes[i] = 0;
+        	indexArray[i] = i;
+        }
+        else{
+        	freeIndexes[i] = i;
+        	indexArray[i] = 0;
+        }
 
         i++;
     }
@@ -1058,9 +1061,6 @@ double CalculateWi(double* parent1gamete, double* parent2gamete, int totalindivi
     }
     newwi = exp(currentlinkageblockssum);
 
-    if (VERYVERBOSE == 1) {
-        //fprintf(veryverbosefilepointer, "\nCalculated fitness at a point %0.6lf\n", newwi);
-    }
     return newwi;
 }
 
@@ -1076,7 +1076,8 @@ void performBirth(double* parent1gamete, double* parent2gamete, int* pCurrentPop
     double newInverseWi;
 
     sizeOfFreeIndexes = sizeof(freeIndexes);
-    for(i = 0; i < sizeOfFreeIndexes; i++){
+
+    for(i = 0; i < MAX_POP_SIZE; i++){
     	freeIndex = freeIndexes[i];
 
     	if(freeIndex != 0){
@@ -1087,29 +1088,17 @@ void performBirth(double* parent1gamete, double* parent2gamete, int* pCurrentPop
     	}
     	else if( (freeIndex == 0) && (i = (sizeOfFreeIndexes - 1)) ){
     		//error detailing that the for loop reached conlusion picked data but this data was for the zero index
-    		/*
         	if(VERBOSE == 1){
         		fprintf(verbosefilepointer, "Perform birth takes from final index that is zero");
         	}
-        	*/
     	}
     	else{
 
     	}
     }
 
-    if ((PERFORMBIRTHMARKER == 1) && ((currentTimeStep > 2040) && (currentTimeStep < 2060))) {
-        fprintf(veryverbosefilepointer, "%d,", usedFreeIndex);
-        fflush(veryverbosefilepointer);
-    }
-
     //calculates the fitness for the new indivdual
     newWi = CalculateWi(parent1gamete, parent2gamete, totalindividualgenomelength);
-
-    if ((PERFORMBIRTHMARKER == 0) && ((currentTimeStep > 2040) && (currentTimeStep < 2060))) {
-        fprintf(veryverbosefilepointer, "%lf\n", newWi);
-        fflush(veryverbosefilepointer);
-    }
 
     //Creates the new recombined genome for the born individual
 	for (i = 0; i < (totalindividualgenomelength / 2); i++) {
@@ -1119,18 +1108,8 @@ void performBirth(double* parent1gamete, double* parent2gamete, int* pCurrentPop
 
 	}
 
-    if (PERFORMBIRTHMARKER == 0) {
-        fprintf(veryverbosefilepointer, "Genome recombined. \n");
-        fflush(veryverbosefilepointer);
-    }
-
 	//inverse of wi is defined as death rate for
     newInverseWi = 1.0 / newWi;
-
-    if (PERFORMBIRTHMARKER == 0) {
-        fprintf(veryverbosefilepointer, "Inverse wi calculated. \n");
-        fflush(veryverbosefilepointer);
-    }
 
     //the following statement is to quickly kill a population for a very short run
 
@@ -1146,10 +1125,6 @@ void performBirth(double* parent1gamete, double* parent2gamete, int* pCurrentPop
 
     *pCurrentPopsize = *pCurrentPopsize + 1;
 
-    if (PERFORMBIRTHMARKER == 0) {
-        fprintf(veryverbosefilepointer, "Summation performed \n");
-        fflush(veryverbosefilepointer);
-    }
 
     if (*pCurrentPopsize > MAX_POP_SIZE) {
     	if(VERBOSE == 1){
@@ -1164,16 +1139,8 @@ void performBirth(double* parent1gamete, double* parent2gamete, int* pCurrentPop
     indexOfStructure = popArray[freeIndex].index;
     arrayOfIndexes[indexOfStructure] = freeIndex;
 
-
-    //remove used index from array of free indexes
     freeIndexes[usedFreeIndex] = 0;
 
-    if (PERFORMBIRTHMARKER == 0) {
-        fprintf(veryverbosefilepointer, "New index in pop array filled out. \n");
-        fflush(veryverbosefilepointer);
-    }
-
-    //Fen_add(wholepopulationwistree, MAX_POP_SIZE, newInverseWi, *pCurrentPopsize);
     Fen_add(wholepopulationwistree, MAX_POP_SIZE, newInverseWi, freeIndex);
 
 }
@@ -1199,62 +1166,31 @@ void performDeath(int* pCurrentPopsize, int currentvictim, long double* sumofwis
     		break;
     	}
     	else if( newFreeIndex != 0 ){
-    		//error detailing that the for loop reached conlusion picked data but this data was for the zero index
-        	if(VERBOSE == 1){
-        		//fprintf(verbosefilepointer, "Perform death calls index of already dead population");
-        	}
+
     	}
     	else{
 
     	}
     }
-    if ((currentTimeStep > 2040) && (currentTimeStep < 2060)){
-    	fprintf(veryverbosefilepointer, "New free Index %d\n", i);
-    	fflush(veryverbosefilepointer);
-    }
-    //the open index will be at the current popsize
+
     openIndex = *pCurrentPopsize;
 
     arrayPositionFlip(*pCurrentPopsize, arrayOfIndexes, currentvictim);
-
-    if (PERFORMDEATHMARKER == 1) {
-        fprintf(veryverbosefilepointer, "arrays filiped. \n");
-        fflush(veryverbosefilepointer);
-    }
 
     *pInverseSumOfWis = *pInverseSumOfWis - popArray[arrayOfIndexes[openIndex]].deathRate;
     *sumofwis = *sumofwis - popArray[arrayOfIndexes[openIndex]].wis;
 
     negativeInverseWi = (NEGATIVE_ONE) * (popArray[arrayOfIndexes[openIndex]].wis);
 
-    if (PERFORMDEATHMARKER == 1) {
-        fprintf(veryverbosefilepointer, "addition performed. \n");
-        fflush(veryverbosefilepointer);
-    }
-
     //Fen_set(wholepopulationwistree, *currentpopsize, ZERO, currentvictim);//switched out newwi for inverseNewWi 11/25/2019
     Fen_add(wholepopulationwistree, MAX_POP_SIZE, negativeInverseWi, currentvictim);
 
     structFreed = arrayOfIndexes[openIndex];
-    if (PERFORMDEATHMARKER == 1) {
-        fprintf(veryverbosefilepointer, "struct freed. \n");
-        fflush(veryverbosefilepointer);
-    }
 
     arrayOfFreeIndexes[newFreeIndex] = arrayOfIndexes[openIndex];
     arrayOfIndexes[openIndex] = 0;
 
-    if (PERFORMDEATHMARKER == 1) {
-        fprintf(veryverbosefilepointer, "index emptied. \n");
-        fflush(veryverbosefilepointer);
-    }
-
     *pCurrentPopsize = *pCurrentPopsize - 1;
-
-    if (PERFORMDEATHMARKER == 1) {
-        fprintf(veryverbosefilepointer, "popsize changes. \n");
-        fflush(veryverbosefilepointer);
-    }
 
 }
 
@@ -1602,25 +1538,25 @@ double RunSimulation(char* Nxtimestepsname, char* popsizename, char* delmutraten
 
         //This is to produce a histogram of the wis of the entire population from a single generation.
         //It's terrible and completely non-modular, but I just can't bring myself to add in two more user-input arguments.
+
         if (strcmp(typeofrun, "single") == 0) {
-            if ((currenttimestep > 2060) && (switchForChart == 0)) {
+
+            if ( (currenttimestep >= 2060.0) && (switchForChart == 0) ) {
+
+            	fprintf(veryverbosefilepointer, "Just before individual wi data lines.\n");
+            	fflush(veryverbosefilepointer);
 
                 if (INDIVIDUALWIDATA == 1) {
-                    if (VERYVERBOSE == 1) {
-                        fprintf(veryverbosefilepointer, "Just before individual wi data lines.\n");
-                        fflush(veryverbosefilepointer);
-                    }
                     fprintf(summarydatafilepointer, "Individual, Wi\n");
                     for (k = 0; k < popsize; k++) {
-
-                    	fprintf(veryverbosefilepointer, "Just before individual wi data lines.\n");
-
-                        fprintf(summarydatafilepointer, "%d,%lf\n", k + 1, popArray[arrayOfIndexes[k]].deathRate);
+                        fprintf(summarydatafilepointer, "%d,%lf\n", k + 1, popArray[arrayOfIndexes[k]].wis);
+                        fflush(summarydatafilepointer);
                     }
                 }
-            }
 
-            switchForChart = 1;
+                switchForChart = 1;
+
+            }
 
         }
 
@@ -1648,8 +1584,10 @@ double RunSimulation(char* Nxtimestepsname, char* popsizename, char* delmutraten
         //These lines end the simulation if fitness declines below 10^-10, which should represent a completely degraded population.
         currentfittestindividualswi = FindFittestWi(popsize, popArray, arrayOfIndexes);
         if (currentfittestindividualswi < pow(10.0, -10.0)) {
+
             fprintf(miscfilepointer, "\nFitness declined to less than 10^-10 during generation %d.", EventsPreformed + 1);
             fprintf(summarydatafilepointer, "Fitness declined to catastrophic levels in generation %d.\n", EventsPreformed + 1);
+
             endofsimulation = EventsPreformed;
             EventsPreformed = timeSteps;
             didpopulationcrash = EventsPreformed;
