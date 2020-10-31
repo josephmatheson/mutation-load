@@ -30,7 +30,7 @@
 #define PERFORMDEATHMARKER 0
 #define VERBOSE 0
 #define VERYVERBOSE 0
-#define RUNSIMULATIONMARKERS 0
+#define RUNSIMULATIONMARKERS 1
 #define MISCELLANEOUS 1
 #define INDIVIDUALWIDATA 1
 #define OVERLAPPINGGENERATIONS 1 //probably should be an input argument at some point.
@@ -744,32 +744,20 @@ void InitializePopulation(long double* wholepopulationwistree, int populationsiz
 
     double haploidgenomelength = (double)((singleIndividualGenomeLength) / 2);
 
+    //right here is where part of the array is uninitialized
     for (i = 0; i < populationsize; i++) {
 
-    	j = i;
+        popArray[i].wis = 1.0;
 
-        popArray[j].wis = 1.0;
-
-        popArray[j].deathRate = 1.0;
+        popArray[i].deathRate = 1.0;
 
         wholepopulationwistree[i] = 1.0; //for relative fitness, all individuals start with probability of being chosen as a parent of 1/N this is a tree
         for (k = 0; k < singleIndividualGenomeLength; k++) {
-
-        	if(k == 0){
-                /*
-                 * This print function will stay as I plan to continue testing with genomes as
-                 * I am not fully certain that everything works correctly.
-                 */
-        	}
-
-            popArray[j].genome[k] = 0.0;
+            popArray[i].genome[k] = 0.0;
         }
-
     }
 
-    i = 0;
-
-    while (i < MAX_POP_SIZE) {
+    for (i = 0; i < MAX_POP_SIZE; i++) {
 
         if(i <= populationsize){
         	freeIndexes[i] = 0;
@@ -780,7 +768,6 @@ void InitializePopulation(long double* wholepopulationwistree, int populationsiz
         	indexArray[i] = 0;
         }
 
-        i++;
     }
 
     //this for loop taken from the Fen_init function in sample implementation from 'Fenwick tree' Wikipedia page.
@@ -865,17 +852,7 @@ int ChooseVictimWithTree(long double* wholepopulationwistree, int popsize, long 
     long double randomnumberofdeath;
     int newVictim = 0;
 
-    /*
-    fprintf(veryverbosefilepointer,"\ninverse sum of wis is %llf\n", inverseSumOfWis);
-    fflush(veryverbosefilepointer);
-	*/
-
     randomnumberofdeath = (long double)ldexp(pcg32_random(), -32) * (inverseSumOfWis);
-
-    /*
-    fprintf(veryverbosefilepointer,"\nrandom number of death is %llf\n", randomnumberofdeath);
-    fflush(veryverbosefilepointer);
-	*/
 
     //Above line generates a random integer between 0 and 2^32, then multiplies by 2^-32
     //to generate a float between 0 and 1 and then multiplies by the sum of wis
@@ -893,18 +870,6 @@ int ChooseVictimWithTree(long double* wholepopulationwistree, int popsize, long 
 
     //the random death is causing a strange number
     newVictim = (SearchTree(leftbound, rightbound, randomnumberofdeath, wholepopulationwistree, eventNumber));//fixed possible error
-
-    /*
-    if (VERYVERBOSE == 1) {
-    	fprintf(veryverbosefilepointer,"\n error message passed\n", randomnumberofdeath);
-    	fflush(veryverbosefilepointer);
-    }
-
-    if (VERYVERBOSE == 1) {
-        fprintf(veryverbosefilepointer, "\nChoosen Victim %d\n", newVictim);
-        fflush(veryverbosefilepointer);
-    }
-	*/
 
     return newVictim;
 }
@@ -1070,12 +1035,9 @@ void performBirth(double* parent1gamete, double* parent2gamete, int* pCurrentPop
     int i;
     int freeIndex;
     int indexOfStructure;
-    int sizeOfFreeIndexes;
     int usedFreeIndex;
     double newWi;
     double newInverseWi;
-
-    sizeOfFreeIndexes = sizeof(freeIndexes);
 
     for(i = 0; i < MAX_POP_SIZE; i++){
     	freeIndex = freeIndexes[i];
@@ -1086,7 +1048,7 @@ void performBirth(double* parent1gamete, double* parent2gamete, int* pCurrentPop
     		usedFreeIndex = i;
     		break;
     	}
-    	else if( (freeIndex == 0) && (i = (sizeOfFreeIndexes - 1)) ){
+    	else if( (freeIndex == 0) && (i == (MAX_POP_SIZE - 1)) ){
     		//error detailing that the for loop reached conlusion picked data but this data was for the zero index
         	if(VERBOSE == 1){
         		fprintf(verbosefilepointer, "Perform birth takes from final index that is zero");
@@ -1157,8 +1119,7 @@ void performDeath(int* pCurrentPopsize, int currentvictim, long double* sumofwis
     int newFreeIndex;
     double negativeInverseWi;
 
-    sizeOfFreeIndexes = sizeof(arrayOfFreeIndexes);
-    for(i = 0; i < sizeOfFreeIndexes; i++){
+    for(i = 0; i < MAX_POP_SIZE; i++){
     	newFreeIndex = arrayOfFreeIndexes[i];
 
     	if(newFreeIndex == 0){
@@ -1182,7 +1143,6 @@ void performDeath(int* pCurrentPopsize, int currentvictim, long double* sumofwis
 
     negativeInverseWi = (NEGATIVE_ONE) * (popArray[arrayOfIndexes[openIndex]].wis);
 
-    //Fen_set(wholepopulationwistree, *currentpopsize, ZERO, currentvictim);//switched out newwi for inverseNewWi 11/25/2019
     Fen_add(wholepopulationwistree, MAX_POP_SIZE, negativeInverseWi, currentvictim);
 
     structFreed = arrayOfIndexes[openIndex];
@@ -1487,12 +1447,7 @@ double RunSimulation(char* Nxtimestepsname, char* popsizename, char* delmutraten
 
     while (currenttimestep <= doubleTimeStep) {
 
-    	//checkDoubles(arrayOfIndexes, arrayOfFreeIndexes, MAX_POP_SIZE, popsize);
-
-        //Following code performs N rounds of paired births and deaths.
-
-    	//this is 3 for right now as the fenwick tree seems to crash at this point
-        if(popsize <= 3){
+    	if(popsize <= 3){
         		//add data for
         		fprintf(summarydatafilepointer, "Population died during run at time step %d", EventsPreformed);
         		fflush(summarydatafilepointer);
@@ -1521,8 +1476,8 @@ double RunSimulation(char* Nxtimestepsname, char* popsizename, char* delmutraten
         }
 
         if (RUNSIMULATIONMARKERS == 1) {
-        	fprintf(verbosefilepointer, "sum of death rates, %lf", inverseSumOfWis);
-        	fflush(verbosefilepointer);
+        	fprintf(veryverbosefilepointer, "sum of death rates, %lf\n", inverseSumOfWis);
+        	fflush(veryverbosefilepointer);
         }
 
 		avgDeathRate = inverseSumOfWis/popsize;
@@ -1547,9 +1502,9 @@ double RunSimulation(char* Nxtimestepsname, char* popsizename, char* delmutraten
             	fflush(veryverbosefilepointer);
 
                 if (INDIVIDUALWIDATA == 1) {
-                    fprintf(summarydatafilepointer, "Individual, Wi\n");
+                    fprintf(summarydatafilepointer, "Individual, death rates\n");
                     for (k = 0; k < popsize; k++) {
-                        fprintf(summarydatafilepointer, "%d,%lf\n", k + 1, popArray[arrayOfIndexes[k]].wis);
+                        fprintf(summarydatafilepointer, "%d,%lf\n", k + 1, popArray[arrayOfIndexes[k]].deathRate);
                         fflush(summarydatafilepointer);
                     }
                 }
